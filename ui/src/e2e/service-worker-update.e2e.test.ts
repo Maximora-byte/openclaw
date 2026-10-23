@@ -49,19 +49,13 @@ type InstallGate = {
 let browser: Browser;
 let outDir: string;
 let server: ControlUiE2eProductionServer;
-let buildBPromise: Promise<void> | undefined;
 
 async function stageBuildB(destination: string): Promise<void> {
-  const pristineDir = `${outDir}-build-b`;
-  // A and B share compiled source; only the canonical deployment identity changes.
-  buildBPromise ??= cp(outDir, pristineDir, { recursive: true, dereference: true }).then(() =>
-    refreshProductionControlUiE2e(pristineDir, buildB),
-  );
-  await buildBPromise;
   await rm(destination, { force: true, recursive: true });
   try {
     // Each deployment owns its bytes; the terminal case modifies its worker.
-    await cp(pristineDir, destination, { recursive: true, dereference: true });
+    await cp(outDir, destination, { recursive: true, dereference: true });
+    await refreshProductionControlUiE2e(destination, buildB);
   } catch (error) {
     await rm(destination, { force: true, recursive: true });
     throw error;
@@ -366,7 +360,7 @@ describe("Control UI service-worker production update E2E", () => {
       } finally {
         if (outDir) {
           await Promise.all(
-            ["", "-build-b", "-next", "-previous", "-foreground", "-sleeping"].map((suffix) =>
+            ["", "-next", "-previous", "-foreground", "-sleeping"].map((suffix) =>
               rm(`${outDir}${suffix}`, { force: true, recursive: true }),
             ),
           );
