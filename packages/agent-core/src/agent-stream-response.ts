@@ -24,6 +24,8 @@ import {
   runAgentCoreStream,
 } from "./runtime-deps.js";
 import { createStreamSteering } from "./stream-steering.js";
+import type { FinalizedToolCallOutcome } from "./tool-call-outcome.js";
+import { resolveAgentAssistantTurnId } from "./tool-execution-context.js";
 import { normalizeCoreContextMessages } from "./turn-interruption.js";
 import { withToolResultContentSource } from "./turn-taint.js";
 import type {
@@ -93,6 +95,38 @@ function ensureToolTurnIdentity(message: AssistantMessage): AssistantMessage {
   }
   // message_end persists this local identity before any tool can execute.
   return { ...message, turnId: uuidv7() };
+}
+
+export function emitToolExecutionStart(
+  batch: { emit: AgentEventSink },
+  toolCall: AgentToolCall,
+  hideFromChannelProgress: boolean,
+): ReturnType<AgentEventSink> {
+  return batch.emit({
+    type: "tool_execution_start",
+    toolCallId: toolCall.id,
+    toolName: toolCall.name,
+    args: toolCall.arguments,
+    ...(hideFromChannelProgress ? { hideFromChannelProgress: true } : {}),
+  });
+}
+
+export async function emitToolExecutionEnd(
+  finalized: FinalizedToolCallOutcome,
+  batch: { emit: AgentEventSink; assistantMessage: AssistantMessage },
+): Promise<void> {
+  const assistantTurnId = resolveAgentAssistantTurnId(batch.assistantMessage);
+  await batch.emit({
+    type: "tool_execution_end",
+    toolCallId: finalized.toolCall.id,
+    ...(assistantTurnId ? { assistantTurnId } : {}),
+    toolName: finalized.toolCall.name,
+    result: finalized.result,
+    isError: finalized.isError,
+    executionStarted: finalized.executionStarted,
+    ...(finalized.errorKind ? { errorKind: finalized.errorKind } : {}),
+    ...(finalized.hideFromChannelProgress === true ? { hideFromChannelProgress: true } : {}),
+  });
 }
 
 export async function emitToolResultMessage(

@@ -13,6 +13,8 @@ import {
 } from "./agent-loop-tool-execution.js";
 import {
   emitToolResultMessage,
+  emitToolExecutionStart,
+  emitToolExecutionEnd,
   streamAgentResponse,
   type AgentEventSink,
   type AsyncToolBatchScheduling,
@@ -48,10 +50,7 @@ import {
   type FinalizedToolCallOutcome,
   type ImmediateToolCallOutcome,
 } from "./tool-call-outcome.js";
-import {
-  captureAgentToolInputScope,
-  resolveAgentAssistantTurnId,
-} from "./tool-execution-context.js";
+import { captureAgentToolInputScope } from "./tool-execution-context.js";
 import {
   appendInterruptedTurnMessage,
   createFailureMessage,
@@ -686,8 +685,27 @@ async function executeToolCallGroups(
       if (!sequential && launched?.started.length && !launched.rejected) {
         batch.onParallelStarted?.();
       }
-      for (const { index, entry, outcome } of launched?.completed ?? []) {
-        await settle(index, entry, outcome);
+      try {
+        for (const { index, entry, outcome } of launched?.completed ?? []) {
+          await settle(index, entry, outcome);
+        }
+      } catch (error) {
+        // Pre-start completions retain admission; committed validation rejections do not.
+        batch.lifecycle?.releaseSkippedCalls?.([
+          ...admittedIds(
+            entries
+              .filter(
+                (entry, index) =>
+                  !startedIndices.has(index) &&
+                  (batch.validated.get(entry.toolCall)?.kind === "prepared" ||
+                    index >= (launched?.rejected?.index ?? entries.length)),
+              )
+              .map(({ toolCall }) => toolCall),
+            batch.validated,
+          ),
+          ...admittedIds(toolCalls.slice(cursor), batch.validated),
+        ]);
+        throw error;
       }
       fatal = launched?.rejected ? { error: launched.rejected.error } : undefined;
       const skippedIndex =
@@ -1105,38 +1123,6 @@ async function completeUnstartedToolCall(
   );
   await emitToolExecutionEnd(finalized, batch);
   return finalized;
-}
-
-function emitToolExecutionStart(
-  batch: ToolBatchContext,
-  toolCall: AgentToolCall,
-  hideFromChannelProgress: boolean,
-): ReturnType<AgentEventSink> {
-  return batch.emit({
-    type: "tool_execution_start",
-    toolCallId: toolCall.id,
-    toolName: toolCall.name,
-    args: toolCall.arguments,
-    ...(hideFromChannelProgress ? { hideFromChannelProgress: true } : {}),
-  });
-}
-
-async function emitToolExecutionEnd(
-  finalized: FinalizedToolCallOutcome,
-  batch: ToolBatchContext,
-): Promise<void> {
-  const assistantTurnId = resolveAgentAssistantTurnId(batch.assistantMessage);
-  await batch.emit({
-    type: "tool_execution_end",
-    toolCallId: finalized.toolCall.id,
-    ...(assistantTurnId ? { assistantTurnId } : {}),
-    toolName: finalized.toolCall.name,
-    result: finalized.result,
-    isError: finalized.isError,
-    executionStarted: finalized.executionStarted,
-    ...(finalized.errorKind ? { errorKind: finalized.errorKind } : {}),
-    ...(finalized.hideFromChannelProgress === true ? { hideFromChannelProgress: true } : {}),
-  });
 }
 
 /* oxlint-disable max-lines -- TODO: split this grandfathered oversized file. */

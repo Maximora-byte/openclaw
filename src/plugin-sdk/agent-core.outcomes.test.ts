@@ -18,7 +18,15 @@ import { SqliteWorkerError } from "../infra/sqlite-worker-contract.js";
 import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js";
 import { Agent, type AgentEvent } from "./agent-core.js";
 
-it.each(["prepare-throw", "prepare-result", "started-sequential", "result-persistence"] as const)(
+const admissionFailurePhases = [
+  "prepare-throw",
+  "prepare-result",
+  "started-sequential",
+  "result-persistence",
+  "aborted-settlement",
+] as const;
+
+it.each(admissionFailurePhases)(
   "releases unstarted admission after a local failure at %s",
   async (phase) => {
     const failure = new SqliteWorkerError("Synthetic unsettled write", "outcome-unknown");
@@ -33,7 +41,7 @@ it.each(["prepare-throw", "prepare-result", "started-sequential", "result-persis
         });
         throw failure;
       };
-    } else if (!started) {
+    } else if (phase === "prepare-throw" || phase === "prepare-result") {
       attachInternalToolExecutionPreparer(failing, async () => {
         if (phase === "prepare-throw") {
           throw failure;
@@ -58,6 +66,14 @@ it.each(["prepare-throw", "prepare-result", "started-sequential", "result-persis
       streamFn,
     });
     agent.subscribe((event) => {
+      if (phase === "aborted-settlement") {
+        if (event.type === "tool_execution_start" && event.toolCallId === "failing") {
+          agent.abort();
+        }
+        if (event.type === "tool_execution_end" && event.toolCallId === "prefix") {
+          throw failure;
+        }
+      }
       if (
         phase === "result-persistence" &&
         event.type === "message_end" &&
