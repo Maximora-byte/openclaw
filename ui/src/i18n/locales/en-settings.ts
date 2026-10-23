@@ -1,6 +1,7 @@
 import activeMemoryPresentation from "../../../../extensions/active-memory/control-ui.presentation.json" with { type: "json" };
 import memoryWikiPresentation from "../../../../extensions/memory-wiki/control-ui.presentation.json" with { type: "json" };
 import type { TranslationMap } from "../lib/types.ts";
+import { registerPreferencesEnglish } from "./en-preferences.ts";
 import { en } from "./en.ts";
 
 // Settings copy loads with its lazy page or search, not the startup shell.
@@ -384,6 +385,46 @@ const enSettings = {
     },
   },
   configForm: {
+    redactedPlaceholder: "[redacted - click reveal to view]",
+    sectionHelp: "Help for {section}",
+    advancedDivider: "Advanced",
+    advancedSettings: "Advanced settings",
+    hideValue: en.configForm.hideValue,
+    revealValue: en.configForm.revealValue,
+    disableStreamToReveal: "Disable stream mode to reveal value",
+    storedSecretNotRevealable: "This editor cannot reveal the stored value.",
+    unsupportedType: "Unsupported type: {type}. Use Raw mode.",
+    structuredSecretRaw: "Structured value (SecretRef) - use Raw mode to edit",
+    structuredSecretFile: "Structured value (SecretRef) - edit the config file directly",
+    defaultValue: en.configForm.defaultValue,
+    select: "Select...",
+    enumOn: "On",
+    enumOff: "Off",
+    enumAuto: "Auto",
+    nullValue: "null",
+    jsonValue: "JSON value",
+    invalidJson: "Enter valid JSON before leaving this field.",
+    invalidString: "Enter a value that matches this setting's constraints.",
+    invalidNumber: "Enter a value within the allowed range and step.",
+    draftRejected: "This setting could not be saved. Your draft is still here.",
+    unsupportedArray: "Unsupported array schema. Use Raw mode.",
+    itemCountOne: "{count} item",
+    itemCount: "{count} items",
+    add: "Add",
+    noItems: 'No items yet. Click "Add" to create one.',
+    removeItem: "Remove item",
+    customEntries: "Custom entries",
+    addEntry: "Add Entry",
+    key: "Key",
+    removeEntry: "Remove entry",
+    removeEntryKey: "Remove entry: {key}",
+    renameRedactedBlocked:
+      "This entry holds a stored secret. Add the new key with its value, then remove this one.",
+    schemaUnavailable: "Schema unavailable.",
+    unsupportedSchema: "Unsupported schema. Use Raw.",
+    unsupportedNode: "Unsupported schema node. Use Raw mode.",
+    noSettingsMatch: 'No settings match "{query}"',
+    noSettingsInSection: "No settings in this section",
     sections: {
       env: {
         label: "Environment Variables",
@@ -2156,7 +2197,10 @@ export const registerSettingsEnglish = Object.assign(
     Object.assign(en.channels, enSettings.channels);
     Object.assign(en.agentTools, enSettings.agentTools);
     Object.assign(en.talkPage, enSettings.talkPage);
-    Object.assign(en.configForm.sections, enSettings.configForm.sections);
+    const { sections, ...configForm } = enSettings.configForm;
+    Object.assign(en.configForm, configForm);
+    Object.assign(en.configForm.sections, sections);
+    registerPreferencesEnglish();
     en.memoryPage = enSettings.memoryPage;
     en.modelProviders = enSettings.modelProviders;
     en.searchPage = enSettings.searchPage;

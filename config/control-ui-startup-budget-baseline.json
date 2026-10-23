@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 311860,
-  "reason": "Optional sidebar views, context and annotation bodies, image helpers and feature English load at use; matched 80b0dce build: startup 311860 B, Chat 1326894 B, New Session 807214 B.",
+  "startupJsGzipBytes": 310150,
+  "reason": "Defer secondary sidebar bodies, previews and English copy: matched 721d124 build startup 311566 to 310150 B, Chat 1333529 to 1316120 B, New Session 816308 to 801949 B; 7/21/16 JS requests.",
   "updatedAt": "2026-10-23"
 }

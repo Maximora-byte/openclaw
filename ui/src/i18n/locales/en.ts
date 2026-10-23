@@ -114,7 +114,15 @@ export const en: TranslationMap & {
       string
     >;
   dashboardsPage: TranslationMap;
-  configForm: TranslationMap & { sections: TranslationMap };
+  configForm: TranslationMap &
+    Record<"hideValue" | "revealValue" | "defaultValue", string> & { sections: TranslationMap };
+  quickSettings: TranslationMap & {
+    appearance: TranslationMap & Record<"lobsterVisits", string>;
+    personal: TranslationMap & Record<"browserOnly", string>;
+  };
+  activityFeed: TranslationMap & Record<"viewingNow" | "showing", string>;
+  terminal: TranslationMap &
+    Record<"title" | "open" | "toggle" | "unavailable" | "startCancelled", string>;
   configPage: TranslationMap;
   profilePage: TranslationMap & {
     personalInstructions: TranslationMap;
@@ -143,14 +151,13 @@ export const en: TranslationMap & {
       | "discardUnconfirmed"
       | "writeGatewayChanged"
       | "writeUnconfirmed"
-      | "rawDraftBlocksApply"
-      | "fileOpenedOnGateway"
       | "reloadBlocked"
+      | "rawDraftBlocksApply"
+      | "rawDraftBlocksFormEdit"
       | "rawDraftUnverified"
-      | "rawDraftBlocksFormEdit",
+      | "fileOpenedOnGateway",
       string
     >;
-  terminal: TranslationMap & Record<"title" | "open" | "toggle" | "unavailable", string>;
   custodian: TranslationMap & { autoSetup: TranslationMap & { thisComputer: string } };
   debug: TranslationMap & {
     lanes: TranslationMap & Record<"lane" | "active" | "queued" | "blocked", string>;
@@ -193,7 +200,10 @@ export const en: TranslationMap & {
       string
     >;
   filePreview: TranslationMap;
-  updates: TranslationMap;
+  updates: TranslationMap &
+    Record<"confirm" | "dialog" | "triage" | "report", TranslationMap> & {
+      run: TranslationMap & Record<"restarting" | "progress", string> & { phase: TranslationMap };
+    };
   login: TranslationMap;
   labsPage: TranslationMap;
   mcpServers: TranslationMap;
@@ -606,15 +616,7 @@ export const en: TranslationMap & {
     holdOneHour: "Hold 1 h",
     reviewUpdate: "Review update",
     run: {
-      title: "Update progress",
-      phases: "Update phases",
-      steps: "Installation steps",
-      details: "Step details",
-      noDetails: "No step details recorded yet.",
-      verification: "Verification checks",
-      report: "Update report",
       restarting: "Gateway restarting…",
-      reconnecting: "Reconnecting automatically. Update progress is saved on the gateway.",
       progress: "{completed} of {total} phases complete",
       phase: {
         requested: "Requested",
@@ -625,26 +627,6 @@ export const en: TranslationMap & {
         restarting: "Restarting",
         verifying: "Verifying",
         finished: "Finished",
-      },
-      step: {
-        completed: "Complete",
-        in_progress: "In progress",
-        pending: "Pending",
-        failed: "Failed",
-        skipped: "Skipped",
-      },
-      oracle: {
-        service: "Service",
-        version: "Version",
-        plugins: "Plugins",
-        channels: "Channels",
-        inference: "Inference",
-      },
-      oracleState: {
-        pass: "Passed",
-        warn: "Not verified",
-        fail: "Failed",
-        pending: "Pending",
       },
     },
     confirm: {
@@ -947,121 +929,17 @@ export const en: TranslationMap & {
     },
   },
   configForm: {
-    redactedPlaceholder: "[redacted - click reveal to view]",
-    sectionHelp: "Help for {section}",
-    advancedDivider: "Advanced",
-    advancedSettings: "Advanced settings",
     hideValue: "Hide value",
     revealValue: "Reveal value",
-    disableStreamToReveal: "Disable stream mode to reveal value",
-    storedSecretNotRevealable: "This editor cannot reveal the stored value.",
-    unsupportedType: "Unsupported type: {type}. Use Raw mode.",
-    structuredSecretRaw: "Structured value (SecretRef) - use Raw mode to edit",
-    structuredSecretFile: "Structured value (SecretRef) - edit the config file directly",
     defaultValue: "Default: {value}",
-    select: "Select...",
-    enumOn: "On",
-    enumOff: "Off",
-    enumAuto: "Auto",
-    nullValue: "null",
-    jsonValue: "JSON value",
-    invalidJson: "Enter valid JSON before leaving this field.",
-    invalidString: "Enter a value that matches this setting's constraints.",
-    invalidNumber: "Enter a value within the allowed range and step.",
-    draftRejected: "This setting could not be saved. Your draft is still here.",
-    unsupportedArray: "Unsupported array schema. Use Raw mode.",
-    itemCountOne: "{count} item",
-    itemCount: "{count} items",
-    add: "Add",
-    noItems: 'No items yet. Click "Add" to create one.',
-    removeItem: "Remove item",
-    customEntries: "Custom entries",
-    addEntry: "Add Entry",
-    key: "Key",
-    removeEntry: "Remove entry",
-    removeEntryKey: "Remove entry: {key}",
-    renameRedactedBlocked:
-      "This entry holds a stored secret. Add the new key with its value, then remove this one.",
-    schemaUnavailable: "Schema unavailable.",
-    unsupportedSchema: "Unsupported schema. Use Raw.",
-    unsupportedNode: "Unsupported schema node. Use Raw mode.",
-    noSettingsMatch: 'No settings match "{query}"',
-    noSettingsInSection: "No settings in this section",
     sections: {},
   },
   // Historical namespace from the pre-restructure "quick settings" page; its
   // keys now serve Models, Privacy & Security, Appearance, and Profile.
   // Renaming would force retranslation of every key, so the name stays.
   quickSettings: {
-    language: "Language",
-    model: {
-      title: "Model & Thinking",
-      model: "Model",
-      thinking: "Thinking",
-      fastMode: "Fast Mode",
-      default: "Default",
-      modelPolicy: "Model policy",
-      thinkingLevels: {
-        off: "Off",
-        low: "Low",
-        medium: "Medium",
-        high: "High",
-      },
-      fastModes: {
-        auto: "Auto",
-        fast: "Fast",
-        standard: "Standard",
-        on: "On",
-        off: "Off",
-      },
-    },
-    channels: {
-      title: "Channels",
-      connect: "Connect →",
-    },
     appearance: {
       lobsterVisits: "Lobster visits",
-      lobsterVisitsOn: "Drops by occasionally",
-      lobsterVisitsThemeHidden:
-        "The lobster stays home while the {theme} theme is active. Other visitors still drop by.",
-      lobsterVisitsOff: "Never visits",
-      lobsterSounds: "Lobster sounds",
-      lobsterSoundsOn: "Tiny blubs when touched",
-      lobsterSoundsOff: "Silent",
-      lobsterdex: "Lobsterdex",
-      lobsterdexSeen: "{seen}/{total} visited",
-      lobsterdexFirstVisited: "{name} · first visited {date}",
-      lobsterdexCardFirstVisited: "First visited {date}",
-      lobsterdexCardShinySeen: "✦ Shiny spotted {date}",
-      lobsterdexCardCopyLink: "Copy link",
-      lobsterdexOpen: "Open Lobsterdex",
-      lobsterdexThemeHidden:
-        "This theme hides Lobsterdex. Your collection and preferences are preserved.",
-    },
-    security: {
-      intro: "Review gateway access, tool policy, device authentication, and approvals.",
-      title: "Security",
-      gatewayAuth: "Gateway auth",
-      execPolicy: "Exec policy",
-      browserEnabled: "Browser enabled",
-      toolProfile: "Available tools",
-      toolProfileDefault:
-        "Using core and default plugin tools. Choose Full to include available optional plugin tools.",
-    },
-    system: {
-      gatewayHost: "Gateway Host",
-      up: "Up {duration}",
-      cpu: "CPU",
-      memory: "Memory",
-      disk: "Disk",
-      usage: "{label} usage",
-      loadAverage: "Load average: {values}",
-      core: "{count} core",
-      cores: "{count} cores",
-      load: "load",
-      used: "used",
-      freeOf: "{free} free of {total}",
-      runtime: "Node {version} · PID {pid}",
     },
     personal: {
       browserOnly: "Stored in this browser only.",
@@ -1217,6 +1095,7 @@ export const en: TranslationMap & {
     title: "Terminal",
     toggle: "Toggle terminal",
     open: "Open terminal",
+    startCancelled: "Terminal start was cancelled. Try again.",
     unavailable: "The terminal is not available on this gateway.",
   },
   browser: {
@@ -1555,51 +1434,8 @@ export const en: TranslationMap & {
     },
   },
   activityFeed: {
-    partialHistory:
-      "People and counts describe visible recorded session associations; retained history and this people list may be incomplete.",
-    sessionsMode: "Sessions",
-    searchPlaceholder: "Search session titles…",
-    time: "Time",
-    time24h: "Last 24 hours",
-    time7d: "Last 7 days",
-    time30d: "Last 30 days",
-    timeAll: "All time",
-    everyone: "Everyone",
-    peopleButtonLabel: "Filter sessions by person",
-    lastActive: "· {time}",
-    unresolvedIdentities: "Unresolved identities",
-    clearPersonFilter: "Clear person filter",
     showing: "Showing {shown} of {total}",
-    today: "Today",
-    yesterday: "Yesterday",
-    unknownDate: "Unknown date",
-    noSessions: "No sessions match these filters.",
-    automationGroup: "{count} automation sessions",
-    automation: "Automation",
-    inspectRun: "Inspect run",
-    recap: "Session recap",
-    recapMissing: "No recap yet",
-    recapUpdating: "Updating recap…",
-    recapStale: "New activity since this recap",
-    recapUnavailable: "Recap unavailable",
-    recapRefreshFailed: "Couldn’t refresh recap",
-    recapRetry: "Retry recap",
-    recapUpdated: "Recap updated {time}",
-    backToSessions: "Back to sessions",
-    channelLabel: "Channel: {value}",
-    agentLabel: "Agent: {value}",
-    online: "Online",
-    idle: "Idle",
-    offline: "Offline",
-    unknownConnection: "Unknown client",
-    connectionDetails: "Connection details · {count}",
-    connectionOne: "1 connection",
-    connectionMany: "{count} connections",
-    lastInput: "Last input {time} ago",
     viewingNow: "Viewing now",
-    notViewing: "Not viewing a session right now.",
-    notFoundTitle: "Person not found",
-    notFoundDescription: "No online presence or visible session association matches this identity.",
   },
   githubPublication: {
     newAction: "Choose a new publication",

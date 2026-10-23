@@ -10,6 +10,7 @@ import { LOBSTER_PALETTE_LORE, lobsterPaletteName } from "../../components/lobst
 import { LOBSTER_PET_PALETTES } from "../../components/lobster-pet-palettes.ts";
 import { Icon } from "../../components/solid/icon.tsx";
 import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx";
+import { registerPreferencesEnglish } from "../../i18n/locales/en-preferences.ts";
 import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { copyToClipboard } from "../../lib/clipboard.ts";
 import { handleNavigationClick } from "../../lib/navigation-click.ts";
@@ -21,6 +22,7 @@ import { projectOwner } from "../../lib/reactive/projection.ts";
 // Page stars must override the shared mini-star rules loaded by lobster-pet-look.
 import "../../styles/lobsterdex.css";
 
+registerEnglishCatalog(registerPreferencesEnglish);
 registerEnglishCatalog(registerSubtitlesEnglish);
 
 type LobsterdexCopyFeedback = { paletteId: LobsterPetPaletteId; status: "copied" | "error" };

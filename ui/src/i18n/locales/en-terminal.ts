@@ -1,7 +1,7 @@
 import type { TranslationMap } from "../lib/types.ts";
 import { en } from "./en.ts";
 
-// Terminal controls load with the panel, page, or a requested terminal start.
+// Terminal controls register with the lazy terminal; shared launch labels stay eager.
 const enTerminal = {
   terminal: {
     title: en.terminal.title,
@@ -36,7 +36,7 @@ const enTerminal = {
     attachFailed: "Could not attach terminal session",
     deliveryFailed: "Terminal delivery could not be confirmed. Reconnect before trying again.",
     inputPaused: "Terminal input is paused until the Gateway reconnects.",
-    startCancelled: "Terminal start was cancelled. Try again.",
+    startCancelled: en.terminal.startCancelled,
     connecting: "Connecting to session…",
     connectionTimedOut: "Session did not connect within 30 seconds.",
     refreshRequired: "Control UI updated. Reload this page to continue the terminal action.",
