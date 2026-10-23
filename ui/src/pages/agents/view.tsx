@@ -12,6 +12,7 @@ import {
 } from "../../components/solid/settings-ui.tsx";
 import { registerPluginManagementEnglish } from "../../i18n/locales/en-plugin-management.ts";
 import { registerSettingsEnglish } from "../../i18n/locales/en-settings.ts";
+import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { buildAgentContext } from "../../lib/agents/display.ts";
 import "../../styles/agents.css";
 import "../../styles/sidebar-markdown.css";
@@ -27,6 +28,8 @@ import { AgentSkills } from "./panels-skills.tsx";
 import { AgentChannels } from "./panels-status-files.tsx";
 import { AgentTools } from "./panels-tools-skills.tsx";
 import { AgentReadNotice, createAgentReadPending } from "./read-status.tsx";
+
+registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerEnglishCatalog(registerSettingsEnglish);
 registerEnglishCatalog(registerPluginManagementEnglish);

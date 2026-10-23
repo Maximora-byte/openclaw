@@ -18,13 +18,14 @@ import type { NativeDeviceSettingsCapability } from "../app/native-device-settin
 import { beginNativeWindowDragFromTopInset } from "../app/native-window-drag.ts";
 import { currentThemeBranding, subscribeThemeBranding } from "../app/theme-branding.ts";
 import { registerSettingsEnglish } from "../i18n/locales/en-settings.ts";
+import { registerSubtitlesEnglish } from "../i18n/locales/en-subtitles.ts";
 import { listSelectableAgents, normalizeAgentLabel } from "../lib/agents/display.ts";
 import type { AgentIdentityCapability } from "../lib/agents/identity.ts";
 import type { GatewayStatus as GatewayStatusKind } from "../lib/gateway-status.ts";
 import { isComposingKeyboardEvent } from "../lib/ime.ts";
 import { handleNavigationClick } from "../lib/navigation-click.ts";
 import { projectAgentSelection } from "../lib/reactive/application.ts";
-import { i18nRevision, t } from "../lib/reactive/i18n.ts";
+import { registerEnglishCatalog, i18nRevision, t } from "../lib/reactive/i18n.ts";
 import { listen } from "../lib/reactive/listener.ts";
 import { liveValue } from "../lib/reactive/live-value.ts";
 import { projectOwner, projectSource } from "../lib/reactive/projection.ts";
@@ -48,6 +49,8 @@ import { Kbd } from "./solid/kbd.tsx";
 import "./agent-select-registration.ts";
 import "../styles/settings.css";
 import { ThemeBrandingIcon } from "./theme-brand-icon.tsx";
+
+registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerSettingsEnglish();
 

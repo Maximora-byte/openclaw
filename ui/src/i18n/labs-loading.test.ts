@@ -12,6 +12,7 @@ it("keeps shared copy eager and loads feature fallback copy at the Labs boundary
   expect(titleForRoute("labs")).toBe("Labs");
   expect(manager.t("labsPage.restartRequired")).toBe("Gateway restart required.");
   expect(manager.t("labsPage.swarm.progress", { complete: "1", total: "2" })).toBe("1 of 2");
+  expect(manager.t("labsPage.intro")).toBe("labsPage.intro");
   expect(manager.t("labsPage.codeMode.description")).toBe("labsPage.codeMode.description");
 
   await manager.setLocale("de");

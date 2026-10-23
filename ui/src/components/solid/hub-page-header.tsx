@@ -2,9 +2,12 @@ import type { JSX } from "@solidjs/web";
 import { Show } from "solid-js";
 import { subtitleForRoute, titleForRoute, type NavigationRouteId } from "../../app-navigation.ts";
 import { ShellLayoutBoundary } from "../../app/shell-layout-traits-solid.tsx";
-import { t } from "../../lib/reactive/i18n.ts";
+import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
+import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
 import { HubTabs } from "./hub-tabs.tsx";
 import { LearnMoreLink } from "./settings-ui.tsx";
+
+registerEnglishCatalog(registerSubtitlesEnglish);
 
 export type HubPageHeaderTabs<T extends NavigationRouteId> = {
   id: string;

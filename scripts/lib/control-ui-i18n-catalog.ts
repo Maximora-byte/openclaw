@@ -63,6 +63,7 @@ import { registerSidebarAttentionEnglish } from "../../ui/src/i18n/locales/en-si
 import { registerSkillLibraryEnglish } from "../../ui/src/i18n/locales/en-skill-library.ts";
 import { registerSkillWorkshopEnglish } from "../../ui/src/i18n/locales/en-skill-workshop.ts";
 import { registerSkillsBrowserEnglish } from "../../ui/src/i18n/locales/en-skills-browser.ts";
+import { registerSubtitlesEnglish } from "../../ui/src/i18n/locales/en-subtitles.ts";
 import { registerSystemsEnglish } from "../../ui/src/i18n/locales/en-systems.ts";
 import { registerToolDiagnosticsEnglish } from "../../ui/src/i18n/locales/en-tool-diagnostics.ts";
 import { registerTranscriptsEnglish } from "../../ui/src/i18n/locales/en-transcripts.ts";
@@ -145,6 +146,7 @@ const sourceFiles = [
   "en-session-skill-library.ts",
   "en-skill-workshop.ts",
   "en-skills-browser.ts",
+  "en-subtitles.ts",
   "en-systems.ts",
   "en-update-actions.ts",
   "en-tool-diagnostics.ts",
@@ -318,6 +320,7 @@ export function loadControlUiSourceCatalog(): TranslationMap {
     registerSidebarAttentionEnglish.catalog,
     registerSkillWorkshopEnglish.catalog,
     registerSkillsBrowserEnglish.catalog,
+    registerSubtitlesEnglish.catalog,
     registerSystemsEnglish.catalog,
     registerUpdateActionsEnglish.catalog,
     registerTranscriptsEnglish.catalog,
