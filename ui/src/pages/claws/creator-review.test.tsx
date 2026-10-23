@@ -59,6 +59,23 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+it("keeps an initial draft failure recoverable before a review opens", async () => {
+  const { context, request } = createReviewContext();
+  request.mockRejectedValueOnce(new Error("Draft unavailable. Try again."));
+  const page = mountSolid(() => <ClawCreatorReview context={context} />);
+  expect(page.queryByLabelText("Name")).toBeNull();
+  await vi.advanceTimersByTimeAsync(0);
+  await waitForSolid(() =>
+    expect(page.getByRole("alert").textContent).toContain("Draft unavailable"),
+  );
+  expect(page.queryByLabelText("Name")).toBeNull();
+  fireEvent.click(page.getByRole("button", { name: "Retry review" }));
+  await waitForSolid(() =>
+    expect(page.getByLabelText<HTMLInputElement>("Name").value).toBe("Release Brief"),
+  );
+  expect(page.queryByRole("alert")).toBeNull();
+});
+
 it("shows a held review without discarding the edited name or accepted package", async () => {
   const { context, request } = createReviewContext();
   const page = mountSolid(() => <ClawCreatorReview context={context} />);
