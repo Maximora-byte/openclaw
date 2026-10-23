@@ -10,12 +10,12 @@ import { CONTROL_UI_BOOTSTRAP_CONFIG_PATH } from "../../../src/gateway/control-u
 import { createControlUiE2eArtifactDir } from "../test-helpers/control-ui-e2e-artifacts.ts";
 import { evaluateControlUiContext } from "../test-helpers/control-ui-e2e-context.ts";
 import {
-  buildProductionControlUiE2e,
   createControlUiMockBootstrapConfig,
   canRunPlaywrightChromium,
   captureControlUiE2eFailureDiagnostics,
   controlUiE2eWaitTimeoutMs,
   installMockGateway,
+  refreshProductionControlUiE2e,
   resolvePlaywrightChromiumExecutablePath,
   startProductionControlUiE2eServer,
   type ControlUiE2eProductionServer,
@@ -53,7 +53,10 @@ let buildBPromise: Promise<void> | undefined;
 
 async function stageBuildB(destination: string): Promise<void> {
   const pristineDir = `${outDir}-build-b`;
-  buildBPromise ??= buildProductionControlUiE2e(pristineDir, buildB);
+  // A and B share compiled source; only the canonical deployment identity changes.
+  buildBPromise ??= cp(outDir, pristineDir, { recursive: true, dereference: true }).then(() =>
+    refreshProductionControlUiE2e(pristineDir, buildB),
+  );
   await buildBPromise;
   await rm(destination, { force: true, recursive: true });
   try {
