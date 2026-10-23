@@ -84,9 +84,14 @@ it("paints the complete readout outside a clipped short split pane and dismisses
   const readout = () => [
     ...popover.querySelectorAll<HTMLElement>(".context-usage__title, strong, dt, dd"),
   ];
-  await expect
-    .poll(() => readout().map((element) => element.textContent?.trim()))
-    .toEqual(["Context window", "20.3k / 200k · 10%", "Input", "19.6k", "Output", "126"]);
+  expect(readout().map((element) => element.textContent?.trim())).toEqual([
+    "Context window",
+    "20.3k / 200k · 10%",
+    "Input",
+    "19.6k",
+    "Output",
+    "126",
+  ]);
   const readoutPainted = () => readout().length === 6 && readout().every(isPainted);
   await expect.poll(readoutPainted).toBe(true);
   const box = popover.getBoundingClientRect();

@@ -12,12 +12,8 @@ it("keeps automation starters out of startup and registers fallback before prefi
   expect(manager.t("tabs.cron")).toBe("Automations");
   expect(manager.t("cron.suggestions.title")).toBe("cron.suggestions.title");
   expect(manager.t("cron.form.createTask")).toBe("cron.form.createTask");
-  expect(manager.t("cron.errors.agentMessageRequiredShort")).toBe(
-    "cron.errors.agentMessageRequiredShort",
-  );
-  expect(manager.t("cron.runNotStarted.alreadyRunning")).toBe(
-    "This automation is already running.",
-  );
+  // Shared payload validation stays readable before the lazy editor loads.
+  expect(manager.t("cron.errors.agentMessageRequiredShort")).toBe("Agent message required.");
 
   await manager.setLocale("de");
   const { CRON_SUGGESTIONS, suggestionFormPatch } = await import("../pages/cron/suggestions.ts");
@@ -37,7 +33,4 @@ it("keeps automation starters out of startup and registers fallback before prefi
     scheduleKind: "cron",
     cronExpr: "0 9 * * 1-5",
   });
-  const { DEFAULT_CRON_FORM } = await import("../lib/cron/state.ts");
-  const { buildCronPayload } = await import("../lib/cron/payload.ts");
-  expect(() => buildCronPayload(DEFAULT_CRON_FORM, null, false)).toThrow("Agent message required.");
 });

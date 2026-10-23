@@ -1,5 +1,5 @@
-import type { JSX } from "@solidjs/web";
 import "../../styles/config.css";
+import type { JSX } from "@solidjs/web";
 import { createMemo, Show } from "solid-js";
 import { subtitleForRoute, titleForRoute } from "../../app-navigation.ts";
 import { pathForRoute } from "../../app-route-paths.ts";
@@ -13,9 +13,8 @@ import {
   SettingsToggleRow,
 } from "../../components/solid/settings-ui.tsx";
 import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { useApplication } from "../../lib/reactive/context.ts";
-import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
+import { t } from "../../lib/reactive/i18n.ts";
 import { createConfigPage } from "./config-page-state.ts";
 import type { ConfigPageId } from "./config-sections.ts";
 import { Mcp, McpIntro } from "./mcp.tsx";
@@ -29,8 +28,6 @@ import { TalkSettingsPage } from "./talk-page.tsx";
 import { UpdatesPage } from "./updates-page.tsx";
 import type { ConfigProps } from "./view-types.ts";
 import { Config } from "./view.tsx";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 export type { ConfigPageId } from "./config-sections.ts";
 
 function renderConfigPageSubtitle(pageId: ConfigPageId) {

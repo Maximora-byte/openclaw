@@ -16,13 +16,13 @@ import {
 import { registerSettingsEnglish } from "../i18n/locales/en-settings.ts";
 import type { ConfigAutoSaveStatus } from "../lib/config/config-state-model.ts";
 import { formatUiError } from "../lib/format-error.ts";
-import { registerEnglishCatalog, t } from "../lib/reactive/i18n.ts";
+import { t } from "../lib/reactive/i18n.ts";
 import { createTimeout } from "../lib/reactive/timers.ts";
 import { ConfigError } from "./config-error.tsx";
 import { Icon } from "./solid/icon.tsx";
 import { ThemeBrandingIcon } from "./theme-brand-icon.tsx";
 
-registerEnglishCatalog(registerSettingsEnglish);
+registerSettingsEnglish();
 
 const SAVED_VISIBLE_MS = 2_000;
 

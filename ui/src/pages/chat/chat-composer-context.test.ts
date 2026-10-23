@@ -7,23 +7,16 @@ import type {
   ModelAuthStatusProfile,
   ModelAuthStatusProvider,
 } from "../../api/types.ts";
-import { waitForSolid } from "../../test-helpers/solid-settle.ts";
+import { flush } from "../../test-helpers/solid-settle.ts";
 import { renderComposerFixture, resetComposerFixture } from "./chat-composer.test-support.ts";
 
 type ComposerOverrides = Parameters<typeof renderComposerFixture>[0];
 
-async function renderComposer(overrides: ComposerOverrides = {}) {
+function renderComposer(overrides: ComposerOverrides = {}) {
   const container = renderComposerFixture(overrides).container;
   document.body.append(container);
-  const trigger = container.querySelector<HTMLElement>(".context-usage summary");
-  if (trigger) {
-    trigger.click();
-    await waitForSolid(() =>
-      expect(
-        container.querySelector(".context-usage__header, .context-usage__plan-header"),
-      ).not.toBeNull(),
-    );
-  }
+  container.querySelector<HTMLElement>(".context-usage summary")?.click();
+  flush();
   return container;
 }
 
@@ -55,8 +48,8 @@ afterEach(async () => {
 });
 
 describe("renderChatComposer context usage", () => {
-  it("uses the last-run prompt budget with fresh usage", async () => {
-    const container = await renderComposer({
+  it("uses the last-run prompt budget with fresh usage", () => {
+    const container = renderComposer({
       selectedSession: sessionRow({
         updatedAt: 2,
         totalTokens: 160_000,
@@ -76,7 +69,7 @@ describe("renderChatComposer context usage", () => {
     ).toBe(true);
   });
 
-  it("does not reuse a global row owned by another agent", async () => {
+  it("does not reuse a global row owned by another agent", () => {
     const session: GatewaySessionRow = {
       key: "global",
       kind: "global",
@@ -84,7 +77,7 @@ describe("renderChatComposer context usage", () => {
       totalTokens: 46_000,
       contextTokens: 200_000,
     };
-    const container = await renderComposer({
+    const container = renderComposer({
       sessionKey: "global",
       currentAgentId: "work",
       selectedSession: undefined,
@@ -94,8 +87,8 @@ describe("renderChatComposer context usage", () => {
     expect(container.querySelector(".context-ring")?.getAttribute("aria-label") ?? null).toBe(null);
   });
 
-  it("renders plan usage before session metrics arrive", async () => {
-    const container = await renderComposer({
+  it("renders plan usage before session metrics arrive", () => {
+    const container = renderComposer({
       sessions: null,
       messages: [{ role: "assistant", content: "hello", provider: "openai" }],
       providerUsage: planUsage(
@@ -123,14 +116,14 @@ describe("renderChatComposer context usage", () => {
 
   it.each([false, true])(
     "does not borrow the default model's capacity when session capacity is unknown (plan usage: %s)",
-    async (withPlanUsage) => {
+    (withPlanUsage) => {
       const session = sessionRow({
         modelProvider: "openai",
         model: "selected-model",
         totalTokens: 46_000,
         totalTokensFresh: true,
       });
-      const container = await renderComposer({
+      const container = renderComposer({
         selectedSession: session,
         sessions: {
           ts: 1,
@@ -165,7 +158,7 @@ describe("renderChatComposer context usage", () => {
     },
   );
 
-  it("deduplicates provider aliases and hides cost estimates for subscriptions", async () => {
+  it("deduplicates provider aliases and hides cost estimates for subscriptions", () => {
     const resetAt = Date.now() + 2 * 3_600_000 + 45_000;
     const usage = {
       providerId: "anthropic",
@@ -177,7 +170,7 @@ describe("renderChatComposer context usage", () => {
       ],
       billing: [{ type: "budget" as const, used: 157.85, limit: 400, unit: "USD" }],
     };
-    const container = await renderComposer({
+    const container = renderComposer({
       messages: [{ role: "user", content: "hi" }],
       selectedSession: sessionRow({
         inputTokens: 2,
@@ -214,7 +207,7 @@ describe("renderChatComposer context usage", () => {
     expect(container.textContent).not.toContain("Est. cost");
   });
 
-  it("uses response provenance only when the session provider is absent", async () => {
+  it("uses response provenance only when the session provider is absent", () => {
     const session = {
       key: "main",
       kind: "direct",
@@ -261,20 +254,18 @@ describe("renderChatComposer context usage", () => {
         row.textContent?.replace(/\s+/g, " ").trim(),
       );
 
-    const container = await renderComposer(composerProps as never);
+    const container = renderComposer(composerProps as never);
 
     expect(providerNames(container)).toEqual([]);
     expect(container.textContent).toContain("Cost by Type");
     expect(container.textContent).not.toContain("Model:");
 
     session.modelProvider = undefined;
-    expect(providerNames(await renderComposer(composerProps as never))).toEqual([
-      "Provider: OpenAI",
-    ]);
+    expect(providerNames(renderComposer(composerProps as never))).toEqual(["Provider: OpenAI"]);
   });
 
-  it("keeps context, token, and cost details when only unrelated plan usage exists", async () => {
-    const container = await renderComposer({
+  it("keeps context, token, and cost details when only unrelated plan usage exists", () => {
+    const container = renderComposer({
       selectedSession: sessionRow({
         inputTokens: 800,
         outputTokens: 200,
@@ -309,8 +300,8 @@ describe("renderChatComposer context usage", () => {
     expect(popoverText).toContain("$0.03");
   });
 
-  it("omits the cost-by-type section when every recorded cost is zero", async () => {
-    const container = await renderComposer({
+  it("omits the cost-by-type section when every recorded cost is zero", () => {
+    const container = renderComposer({
       messages: [
         { role: "user", content: "hi" },
         {
@@ -340,8 +331,8 @@ describe("renderChatComposer context usage", () => {
     expect(container.textContent).not.toContain("Cost by Type");
   });
 
-  it("warns on fresh high usage but keeps stale usage approximate", async () => {
-    let container = await renderComposer({
+  it("warns on fresh high usage but keeps stale usage approximate", () => {
+    let container = renderComposer({
       selectedSession: sessionRow({ totalTokens: 190_000, contextTokens: 200_000 }),
       sessions: {
         sessions: [],
@@ -355,7 +346,7 @@ describe("renderChatComposer context usage", () => {
     expect(contextRing?.classList).toContain("context-ring--warning");
     expect(container.textContent).not.toContain("Compact");
 
-    container = await renderComposer({
+    container = renderComposer({
       selectedSession: sessionRow({
         totalTokens: 190_000,
         totalTokensFresh: false,

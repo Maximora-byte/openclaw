@@ -16,7 +16,6 @@ import { toSanitizedMarkdownHtml } from "../../../components/markdown.ts";
 import { CopyButton } from "../../../components/solid/copy-button.tsx";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { createTextOverflow } from "../../../components/solid/text-overflow.ts";
-import { registerChatFilesEnglish } from "../../../i18n/locales/en-chat-files.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { registerFilePreviewEnglish } from "../../../i18n/locales/en-file-preview.ts";
 import { formatBytes } from "../../../lib/agents/display.ts";
@@ -28,8 +27,6 @@ import { AttachmentPreviewSkeleton } from "./chat-attachment-card-solid.tsx";
 import { readAttachmentText } from "./chat-attachment-text-reader.ts";
 import { HtmlPreview } from "./chat-html-preview-view.tsx";
 import { isHtmlDocument } from "./chat-html-preview.ts";
-
-registerEnglishCatalog(registerChatFilesEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

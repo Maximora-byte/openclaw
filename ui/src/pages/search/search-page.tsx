@@ -33,7 +33,6 @@ import {
 import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx";
 import { i18n } from "../../i18n/lib/translate.ts";
 import { registerSettingsEnglish } from "../../i18n/locales/en-settings.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { currentConfigObject } from "../../lib/config/config-state-model.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import type { GatewayConnectionScope } from "../../lib/gateway-connection-lifecycle.ts";
@@ -50,8 +49,6 @@ import { createCredentialPresentation } from "../plugins/credential-presentation
 import { readConfigValue, searchConfigRevision, isSearchConfigSettled } from "./search-config.ts";
 import { renderSearchTestResult } from "./search-results.tsx";
 import { SearchSetup, AdvancedSearchSettings } from "./search-setup.tsx";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerEnglishCatalog(registerSettingsEnglish);
 

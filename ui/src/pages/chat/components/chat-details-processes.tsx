@@ -2,15 +2,12 @@ import { Errored, For, Loading, Show, createMemo, isPending, latest } from "soli
 import type { SessionProcessSummary } from "../../../../../packages/gateway-protocol/src/schema/session-processes.js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { useScrollState } from "../../../components/solid/scroll-state.ts";
-import { registerChatDetailsEnglish } from "../../../i18n/locales/en-chat-details.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
-import "./chat-details-processes.css";
 import type { ProcessesPanelData } from "../processes-panel-data.ts";
+import "./chat-details-processes.css";
 import { ChatDetailsDesktopSection } from "./chat-details-desktop-section.tsx";
 import { createProcessesPresentation } from "./chat-processes-presentation.ts";
-
-registerEnglishCatalog(registerChatDetailsEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

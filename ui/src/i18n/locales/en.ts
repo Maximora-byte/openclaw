@@ -65,20 +65,12 @@ export const en: TranslationMap & {
           | "automationPaused"
           | "automationUnavailable"
           | "automations"
-          | "progressOptions"
-          | "title"
-          | "close"
-          | "stopped"
-          | "progressHidden",
+          | "progressOptions",
           string
         >;
-      rail: TranslationMap & Record<"collapse" | "show" | "clear" | "selectionTooLong", string>;
       sessionDiff: TranslationMap & Record<"title" | "show", string>;
       sessionSharing: TranslationMap & Record<"draft", string>;
-      workspaceFiles: TranslationMap &
-        Record<"copyPath" | "collapse" | "showFiles" | "artifacts" | "root", string> & {
-          desktop: TranslationMap & Record<"sessionFiles", string>;
-        };
+      workspaceFiles: TranslationMap & Record<"copyPath", string>;
       toolCards: TranslationMap;
       codeBlock: TranslationMap;
       commandResults: TranslationMap & { fast: TranslationMap };
@@ -221,7 +213,6 @@ export const en: TranslationMap & {
     attachmentPrompt: string;
     categories: TranslationMap & { navigation: string };
   };
-  subtitles: TranslationMap;
   sessionsView: TranslationMap &
     Record<
       | "pullRequestCount"
@@ -1204,7 +1195,58 @@ export const en: TranslationMap & {
     logs: "Logs",
     plugin: "Plugin",
   },
-  subtitles: {},
+  subtitles: {
+    device: "App settings and capabilities on this Mac.",
+    devicePermissions: "Manage macOS access, location, and computer presence.",
+    agentsHome: "Who is on your team and what they are doing",
+    agents: "Workspaces, tools, identities.",
+    activity: "Recent sessions across people using this gateway.",
+    meetings: "Meeting notes and transcripts across this gateway.",
+    apps: "Companion apps for phone, watch, desktop, and browser.",
+    portals: "Live previews from agent-run applications.",
+    approvals: "Recent exec, plugin, and system-agent approvals.",
+    workboard: "Agent work queue and session handoff.",
+    worktrees: "Isolated agent task checkouts and recovery snapshots.",
+    channels: "Channels and settings.",
+    connection: "Gateway endpoint, credentials, and handshake status.",
+    sessions: "Active sessions and defaults.",
+    systems: "Machines and desktops.",
+    usage: "API usage and costs.",
+    cron: "Scheduled tasks and recurring agent runs.",
+    skills: "Manage your agent skills",
+    plugins: "Extend your Claw with tools",
+    skillWorkshop: "Skills your agent learned, recent changes, and undo.",
+    devices: "Paired devices, pairing approvals, and exec bindings.",
+    claws: "Explore and add official Claws.",
+    cloudWorkers: "Repository snapshots and machines for cloud sessions.",
+    chat: "Gateway chat for quick interventions.",
+    dashboards: "Tasks with saved dashboards.",
+    custodian: "System setup and care.",
+    config: "Legacy settings route; opens Appearance.",
+    profile: "Your display name, avatar, and identity on this gateway.",
+    communications: "Messages, text-to-speech, and meeting capture settings.",
+    appearance: "Theme and UI settings.",
+    lobsterdex: "Every lobster palette that has visited this browser.",
+    automation: "Commands, hooks, automations, and plugins.",
+    mcp: "MCP servers, auth, tools, and diagnostics.",
+    memory: "Memory engine, search, and dreaming.",
+    search: "Choose how agents search the web and check provider health.",
+    talk: "Realtime voice: provider, model, and speaker voice.",
+    infrastructure: "Gateway, browser, node host, discovery, and ACP settings.",
+    labs: "Experimental agent and tool capabilities.",
+    updates: "Release channel, automatic updates, and current update status.",
+    about: "Control UI and connected Gateway build identity.",
+    aiAgents: "Global agent defaults: skills, tools, and session.",
+    modelSetup: "Connect a verified AI model",
+    modelProviders: "Default models, behavior, provider access, usage, and cost.",
+    memoryImport: "Bring Codex and Claude Code memory into an agent workspace.",
+    notifications: "Browser push notifications from your gateway.",
+    security: "Gateway auth, exec policy, tool profile, and approvals.",
+    advanced: "Every remaining config section, plus the raw file editor.",
+    debug: "Snapshots, events, RPC.",
+    logs: "Live gateway logs.",
+    plugin: "Plugin-provided panel.",
+  },
   meetingCapture: {
     title: "Meeting capture",
     description: "Choose which sources can save meeting notes on this Gateway.",
@@ -1334,13 +1376,15 @@ export const en: TranslationMap & {
     install: "Install",
   },
   labsPage: {
-    intro: {},
-    sectionTitle: {},
-    sectionDescription: {},
-    documentation: {},
+    intro:
+      "Labs contains experimental capabilities that may change, break, or disappear between releases.",
+    sectionTitle: "Experimental features",
+    sectionDescription:
+      "Changes save without restarting the Gateway. Code Mode and Tool Search apply to future agent runs.",
+    documentation: "Documentation",
     restartRequired: "Gateway restart required.",
-    saveErrorTitle: {},
-    saveFailed: {},
+    saveErrorTitle: "Could not update feature",
+    saveFailed: "The feature setting could not be saved.",
     decisionAssistance: {},
     codeMode: {},
 
@@ -1742,10 +1786,6 @@ export const en: TranslationMap & {
       automationAttention: "Needs attention",
       automationPaused: "Paused",
       automationEnabled: "Enabled",
-      title: "Details",
-      close: "Close details",
-      stopped: "Stopped",
-      progressHidden: "Task progress hidden in this browser.",
     },
     agentDatabaseWarming: "This agent is still starting. Retry in a moment.",
     historyRequestTimedOut: "Chat history request timed out. Retry to load the conversation.",
@@ -2259,13 +2299,7 @@ export const en: TranslationMap & {
     modelControls: {},
     nativeRuntimeRecovery: {},
     permissionControls: {},
-    rail: {
-      collapse: "Collapse side chat",
-      show: "Show side chat",
-      clear: "Clear side chat",
-      selectionTooLong:
-        "These comments are too long for Side chat. Use a shorter selection or comment.",
-    },
+    rail: {},
     detailPanel: {},
     sidebarColumns: {
       close: "Close {panel}",
@@ -2518,13 +2552,6 @@ export const en: TranslationMap & {
     sessionDiscussion: {},
     workspaceFiles: {
       copyPath: "Copy path",
-      desktop: {
-        sessionFiles: "Session files",
-      },
-      collapse: "Collapse session workspace",
-      showFiles: "Show session files",
-      artifacts: "Artifacts",
-      root: "Root",
     },
   },
 
@@ -2582,7 +2609,36 @@ export const en: TranslationMap & {
     form: {},
     jobState: {},
     runEntry: {},
-    errors: {},
+    errors: {
+      nameRequired: "Name is required.",
+      activeHoursTime: "Enter HH:MM (24:00 is allowed only for the end).",
+      activeHoursTimezone: "Enter a valid IANA timezone, local, or user.",
+      scheduleAtInvalid: "Enter a valid date/time.",
+      everyAmountInvalid: "Interval must be greater than 0.",
+      triggerIntervalTooShort:
+        "Condition-triggered automations must run at least every 30 seconds.",
+      cronExprRequired: "Cron expression is required.",
+      staggerAmountInvalid: "Stagger must be greater than 0.",
+      triggerScriptRequired: "Trigger script is required when the condition trigger is enabled.",
+      triggerScriptPayloadUnsupported:
+        "Script payloads cannot use condition triggers because both own the same saved state.",
+      triggerScheduleUnsupported:
+        "Condition triggers require an interval, cron, or stream schedule.",
+      systemTextRequired: "System text is required.",
+      agentMessageRequired: "Agent message is required.",
+      timeoutInvalid: "If set, timeout must be 0 or greater (0 disables this timeout).",
+      deliveryModeRequired:
+        "Choose a delivery mode explicitly, or run openclaw doctor --fix to repair legacy settings.",
+      webhookUrlRequired: "Webhook URL is required.",
+      webhookUrlInvalid: "Webhook URL must be a valid http(s):// URL without embedded credentials.",
+      invalidRunTime: "Invalid run time.",
+      invalidIntervalAmount: "Invalid interval amount.",
+      cronExprRequiredShort: "Cron expression required.",
+      invalidStaggerAmount: "Invalid stagger amount.",
+      systemEventTextRequired: "System event text required.",
+      agentMessageRequiredShort: "Agent message required.",
+      nameRequiredShort: "Name required.",
+    },
   },
 
   linkReader: {

@@ -1,13 +1,10 @@
 import { createMemo, createSignal, createUniqueId, For, Show } from "solid-js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { Menu } from "../../../components/solid/menu.tsx";
-import { registerChatFilesEnglish } from "../../../i18n/locales/en-chat-files.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { createLayoutMeasurement } from "../../../lib/reactive/layout-measurement.ts";
 import { splitWorkspaceFilename } from "./chat-session-workspace-catalog.ts";
-
-registerEnglishCatalog(registerChatFilesEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

@@ -15,7 +15,6 @@ import { pathForRoute } from "../../../app-route-paths.ts";
 import { gatewayPresentationScope } from "../../../app/gateway-presentation-scope.ts";
 import type { ApplicationGateway } from "../../../app/gateway.ts";
 import { Icon } from "../../../components/solid/icon.tsx";
-import { registerChatDetailsEnglish } from "../../../i18n/locales/en-chat-details.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { loadCompactCronJobsPage, retireCronJobsRequest } from "../../../lib/cron/jobs.ts";
 import { createInitialCronState } from "../../../lib/cron/state.ts";
@@ -28,12 +27,10 @@ import { elementRef } from "../../../lib/reactive/element-ref.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { listen } from "../../../lib/reactive/listener.ts";
 import { resolveUiConversationIdentity } from "../../../lib/sessions/session-key.ts";
-import "../../../styles/chat/summary-automations.css";
 import { HoverMarquee } from "../../../lib/solid/hover-marquee.tsx";
+import "../../../styles/chat/summary-automations.css";
 import { ChatDetailsDesktopSection } from "./chat-details-desktop-section.tsx";
 import { sessionAutomationSchedule } from "./session-automation-schedule.ts";
-
-registerEnglishCatalog(registerChatDetailsEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

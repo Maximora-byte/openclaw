@@ -11,7 +11,6 @@ import {
   safePlainTextAttachmentHref,
   safeMediaAttachmentHref,
 } from "./chat-attachment-href.ts";
-import { openResolvedImage } from "./chat-image-lightbox.ts";
 import {
   shouldDeferAttachmentCard,
   type AttachmentAdmission,
@@ -21,6 +20,7 @@ import { isManagedOutgoingMediaSource } from "./chat-message-attachment-availabi
 import { resolveAttachmentSource, readAttachmentSource } from "./chat-message-attachment-source.ts";
 import { AssistantAttachmentStatusCard } from "./chat-message-attachment-status-solid.tsx";
 import { attachmentFailureReason } from "./chat-message-attachment-status.ts";
+import { openResolvedImage } from "./chat-message-image-open.ts";
 import { isLocalAssistantAttachmentSource } from "./chat-message-local-media.ts";
 import {
   resolveAttachmentImageKind,

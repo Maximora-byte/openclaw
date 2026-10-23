@@ -30,7 +30,6 @@ import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx
 import { GitHubConnections } from "../../features/github-connections/github-connections.tsx";
 import { registerModelAccountsEnglish } from "../../i18n/locales/en-model-accounts.ts";
 import { registerProfileEnglish } from "../../i18n/locales/en-profile.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { formatUiError } from "../../lib/format-error.ts";
 import { useApplication } from "../../lib/reactive/context.ts";
 import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
@@ -43,8 +42,6 @@ import { PersonalInstructions } from "./personal-instructions.tsx";
 import { userProfileAvatarUrl } from "./profile-avatar-url.ts";
 import { ProfileHero } from "./profile-hero.tsx";
 import { type IdentityChange, ProfileState } from "./profile-state.ts";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerEnglishCatalog(registerModelAccountsEnglish);
 registerEnglishCatalog(registerProfileEnglish);

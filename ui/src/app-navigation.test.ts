@@ -19,7 +19,6 @@ import {
 } from "./app-route-paths.ts";
 import { createApplicationRouter, routeIdFromPath, type RouteId } from "./app-routes.ts";
 import { sessionRefFromPath } from "./app-session-route-paths.ts";
-import { registerSubtitlesEnglish } from "./i18n/locales/en-subtitles.ts";
 import { sessionNavigationTarget } from "./lib/sessions/route-navigation.ts";
 import { settingsSearchTextMatches } from "./lib/settings-navigation.ts";
 import { pluginTabKey, pluginTabRefFromSearch } from "./pages/plugin/route.tsx";
@@ -80,7 +79,6 @@ describe("formatDocumentTitle", () => {
 });
 
 it("keeps every navigation title and subtitle backed by an English translation", () => {
-  registerSubtitlesEnglish();
   // Missing translations return the raw dotted key.
   const rawI18nKey = /^[a-z][a-zA-Z0-9]*\.[a-zA-Z]/;
   for (const routeId of ALL_ROUTES) {

@@ -11,7 +11,6 @@ import {
   type MenuItem,
 } from "../../../components/solid/menu.tsx";
 import { createTextOverflow } from "../../../components/solid/text-overflow.ts";
-import { registerChatDiffEnglish } from "../../../i18n/locales/en-chat-diff.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { EDITOR_IDS, EDITOR_LABELS, type EditorId } from "../../../lib/editor-links.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
@@ -26,8 +25,6 @@ import {
   SessionDiffCollapseIcon,
 } from "./session-diff-icons.tsx";
 import type { SessionDiffMode } from "./session-diff-preferences.ts";
-
-registerEnglishCatalog(registerChatDiffEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 export { SessionDiffActionIcon } from "./session-diff-icons.tsx";

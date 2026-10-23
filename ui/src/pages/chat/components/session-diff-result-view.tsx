@@ -3,7 +3,6 @@ import { createSignal, For, onSettled, Show } from "solid-js";
 import { Icon } from "../../../components/solid/icon.tsx";
 import { PanelEmptyState } from "../../../components/solid/panel-empty-state.tsx";
 import { PanelLoadingSkeleton } from "../../../components/solid/panel-loading-skeleton.tsx";
-import { registerChatDiffEnglish } from "../../../i18n/locales/en-chat-diff.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { createResizeObserver } from "../../../lib/reactive/observers.ts";
@@ -13,8 +12,6 @@ import { createSessionDiffFileView } from "./session-diff-file-view.tsx";
 import type { SessionDiffViewBindings } from "./session-diff-presentation.ts";
 import { SessionDiffTree } from "./session-diff-tree.tsx";
 import type { DiffValue } from "./session-diff-types.ts";
-
-registerEnglishCatalog(registerChatDiffEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

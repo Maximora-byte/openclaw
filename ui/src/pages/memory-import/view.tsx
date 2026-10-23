@@ -18,7 +18,6 @@ import {
   SettingsValue,
 } from "../../components/solid/settings-ui.tsx";
 import { registerMemoryImportEnglish } from "../../i18n/locales/en-memory-import.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { normalizeAgentLabel } from "../../lib/agents/display.ts";
 import { formatUiError, formatUiExternalText } from "../../lib/format-error.ts";
 import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
@@ -26,7 +25,6 @@ import type { MemoryImportViewProps } from "./view-types.ts";
 import "../../styles/memory-import.css";
 
 registerEnglishCatalog(registerMemoryImportEnglish);
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 type MemoryCollection = {
   label: string;

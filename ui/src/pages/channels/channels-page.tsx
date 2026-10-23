@@ -5,13 +5,12 @@ import { hasOperatorAdminAccess, hasOperatorPairingAccess } from "../../app/oper
 import { loadSettings, patchSettings } from "../../app/settings.ts";
 import { LearnMoreLink, SettingsPageHeader } from "../../components/solid/settings-ui.tsx";
 import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { resolveChannelPairingAuthSignature } from "../../lib/channels/index.ts";
 import { GatewayPageBinding, type GatewayPageChange } from "../../lib/gateway-page-binding.ts";
 import { projectGateway } from "../../lib/reactive/application.ts";
 import { useApplication } from "../../lib/reactive/context.ts";
 import { projectChannels, projectRuntimeConfig } from "../../lib/reactive/domain-capabilities.ts";
-import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
+import { t } from "../../lib/reactive/i18n.ts";
 import { projectMutableSource, projectSource } from "../../lib/reactive/projection.ts";
 import { useVisiblePoll } from "../../lib/reactive/visible-poll.ts";
 import { resolveScrollBehavior } from "../../lib/scroll-behavior.ts";
@@ -20,8 +19,6 @@ import { createChannelPluginPresentation } from "./plugin-presentation-loader.ts
 import { ChannelsView, resolveChannelOrder } from "./view.tsx";
 import type { ChannelPairingPrompt, ChannelsProps } from "./view.types.ts";
 import { createChannelSetup } from "./wizard-setup.ts";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 const CHANNEL_PAIRING_POLL_INTERVAL_MS = 30_000;
 const CHANNELS_DOCS_URL = "https://docs.openclaw.ai/channels";

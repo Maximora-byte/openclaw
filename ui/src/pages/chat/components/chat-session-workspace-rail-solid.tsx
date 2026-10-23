@@ -7,7 +7,6 @@ import { Icon, type IconName } from "../../../components/solid/icon.tsx";
 import { PanelLoadingSkeleton } from "../../../components/solid/panel-loading-skeleton.tsx";
 import { createTextOverflow } from "../../../components/solid/text-overflow.ts";
 import "../../../components/tooltip.ts";
-import { registerChatFilesEnglish } from "../../../i18n/locales/en-chat-files.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { formatUiError } from "../../../lib/format-error.ts";
 import { formatByteSize } from "../../../lib/format.ts";
@@ -21,8 +20,6 @@ import { MobileWorkspaceContents } from "./chat-session-workspace-mobile-adapter
 import { createSessionWorkspaceRead } from "./chat-session-workspace-read.ts";
 import type { SessionWorkspaceFilter } from "./chat-sidebar-content-types.ts";
 import type { SessionWorkspaceProps } from "./chat-sidebar-view-types.ts";
-
-registerEnglishCatalog(registerChatFilesEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

@@ -15,7 +15,6 @@ import {
 import { registerMemoryImportEnglish } from "../../i18n/locales/en-memory-import.ts";
 import { registerPluginManagementEnglish } from "../../i18n/locales/en-plugin-management.ts";
 import { registerSettingsEnglish } from "../../i18n/locales/en-settings.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import type { PluginCatalogItem } from "../../lib/plugins/index.ts";
 import { t, registerEnglishCatalog } from "../../lib/reactive/i18n.ts";
 import { memoryAddonPresentations } from "./memory-addon-presentation.ts";
@@ -25,8 +24,6 @@ import {
   type MemoryEngineSelection,
   type MemoryTab,
 } from "./memory-schema.ts";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerEnglishCatalog(registerSettingsEnglish);
 

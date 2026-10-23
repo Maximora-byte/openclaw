@@ -14,7 +14,6 @@ import {
 import { resolveNodeIdFromCandidates } from "../../../../src/shared/node-match.js";
 import { SettingsRow, SettingsSection, SettingsPage } from "../../components/solid/settings-ui.tsx";
 import { registerDevicesEnglish } from "../../i18n/locales/en-devices.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
 import { t, registerEnglishCatalog } from "../../lib/reactive/i18n.ts";
 import "../../styles/devices.css";
 import type { DevicePolicyRead } from "./devices-policy-reads.ts";
@@ -24,7 +23,6 @@ import { resolveConfigAgents, resolveNodeTargets } from "./view-shared.tsx";
 import type { DevicesProps } from "./view.types.ts";
 
 registerEnglishCatalog(registerDevicesEnglish);
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 export function DevicesView(props: DevicesProps) {
   const bindingState = createMemo(() => resolveBindingsState(omit(props, "inventorySaving")));

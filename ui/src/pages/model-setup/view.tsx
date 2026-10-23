@@ -7,8 +7,7 @@ import { Icon } from "../../components/solid/icon.tsx";
 import { LearnMoreLink } from "../../components/solid/settings-ui.tsx";
 import { SettingsWorkspace } from "../../components/solid/settings-workspace.tsx";
 import { registerModelSetupEnglish } from "../../i18n/locales/en-model-setup.ts";
-import { registerSubtitlesEnglish } from "../../i18n/locales/en-subtitles.ts";
-import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
+import { t } from "../../lib/reactive/i18n.ts";
 import type { JSX } from "../../types/solid-elements.js";
 import "../../styles/model-setup.css";
 import {
@@ -30,8 +29,6 @@ import { manualProviderName, ManualProviderPicker } from "./provider-picker.tsx"
 import { ModelSetupSuccessDialog } from "./success-dialog.tsx";
 import type { ModelSetupViewProps } from "./view-types.ts";
 import { ModelSetupWizard } from "./wizard-view-solid.tsx";
-
-registerEnglishCatalog(registerSubtitlesEnglish);
 
 registerModelSetupEnglish();
 

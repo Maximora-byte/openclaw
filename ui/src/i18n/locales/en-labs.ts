@@ -3,14 +3,6 @@ import { en } from "./en.ts";
 
 const enLabs = {
   labsPage: {
-    intro:
-      "Labs contains experimental capabilities that may change, break, or disappear between releases.",
-    sectionTitle: "Experimental features",
-    sectionDescription:
-      "Changes save without restarting the Gateway. Code Mode and Tool Search apply to future agent runs.",
-    documentation: "Documentation",
-    saveErrorTitle: "Could not update feature",
-    saveFailed: "The feature setting could not be saved.",
     configure: "Configure",
     configureFeature: "Configure {name}",
     decisionAssistance: {

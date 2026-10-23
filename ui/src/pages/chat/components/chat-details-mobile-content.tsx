@@ -6,7 +6,6 @@ import {
   progressCardPresentation,
 } from "../../../components/session-progress-card.ts";
 import { Icon } from "../../../components/solid/icon.tsx";
-import { registerChatDetailsEnglish } from "../../../i18n/locales/en-chat-details.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { resolveSessionDisplayName } from "../../../lib/session-display.ts";
@@ -59,14 +58,12 @@ import {
   ChatSessionVersionsMobile,
   type ChatSessionVersionsMobileProps,
 } from "./chat-session-versions-mobile.tsx";
-import "../../../styles/chat/details.css";
 import {
   SessionAutomationRead,
   type SessionAutomationInventory,
 } from "./chat-summary-automations.tsx";
+import "../../../styles/chat/details.css";
 import { sessionAutomationSchedule } from "./session-automation-schedule.ts";
-
-registerEnglishCatalog(registerChatDetailsEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 
