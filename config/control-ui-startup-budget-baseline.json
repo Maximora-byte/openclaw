@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 310150,
-  "reason": "Defer secondary sidebar bodies, previews and English copy: matched 721d124 build startup 311566 to 310150 B, Chat 1333529 to 1316120 B, New Session 816308 to 801949 B; 7/21/16 JS requests.",
+  "startupJsGzipBytes": 309748,
+  "reason": "Optional sidebar bodies and copy: matched a234721 build 311198 to 309748 B startup, 1324174 to 1306447 B Chat and 814488 to 801507 B New Session; seven startup JS requests.",
   "updatedAt": "2026-10-23"
 }
