@@ -1,4 +1,8 @@
 import { Errored, Loading, Repeat, type ParentProps } from "solid-js";
+import {
+  isStaleChunkImportError,
+  retryStaleChunkReloadWhenReachable,
+} from "../app/stale-chunk-reload.ts";
 import { t } from "../lib/reactive/i18n.ts";
 
 /** The fixed sidebar shell stays mounted while an optional view loads. */
@@ -7,11 +11,17 @@ export function SidebarViewBoundary(
 ) {
   return (
     <Errored
-      fallback={(_error, reset) => (
+      fallback={(error, reset) => (
         <div class="sidebar-view-loading sidebar-session-error callout danger" role="alert">
           <span>{t("lazyView.errorTitle")}</span>
-          <button class="btn btn--sm" type="button" onClick={reset}>
-            {t("common.retry")}
+          <button
+            class="btn btn--sm"
+            type="button"
+            onClick={() =>
+              isStaleChunkImportError(error()) ? void retryStaleChunkReloadWhenReachable() : reset()
+            }
+          >
+            {t(isStaleChunkImportError(error()) ? "common.reload" : "common.retry")}
           </button>
         </div>
       )}
