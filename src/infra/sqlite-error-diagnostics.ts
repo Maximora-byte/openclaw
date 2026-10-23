@@ -23,7 +23,7 @@ const STORAGE_ERRORS = [
     -2,
   ],
 ] as const;
-export type GatewayStorageFailure = (typeof STORAGE_ERRORS)[number][0] | "57014";
+export type GatewayStorageFailure = (typeof STORAGE_ERRORS)[number][0] | "57014" | "unavailable";
 
 function readOwnErrorDataProperty(value: object, key: string): unknown {
   try {
@@ -91,6 +91,9 @@ export function classifyGatewayStorageFailure(error: unknown): GatewayStorageFai
 }
 
 function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefined {
+  if (isSqliteWorkerError(error, "unavailable")) {
+    return "unavailable";
+  }
   const fields = typeof error === "string" ? { message: error } : isRecord(error) ? error : {};
   const code =
     readOwnErrorDataProperty(fields, "errorCode") ?? readOwnErrorDataProperty(fields, "code");

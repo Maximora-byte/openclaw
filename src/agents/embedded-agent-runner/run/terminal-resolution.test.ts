@@ -143,6 +143,7 @@ describe("terminal resolution", () => {
   });
 
   it.each([
+    [new SqliteWorkerError("private rollback diagnostic", "unavailable"), "unavailable"],
     [
       new SqliteWorkerError("private native diagnostic", "outcome-unknown"),
       "session_actor_reconciliation",

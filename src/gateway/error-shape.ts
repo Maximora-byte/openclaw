@@ -22,6 +22,7 @@ export function errorShapeFromError(
   const ended = candidates.find((candidate) => candidate instanceof IncognitoSessionEndedError);
   const storageFailure = classifyGatewayStorageFailure(error);
   const storageMessage =
+    storageFailure === "unavailable" ||
     storageFailure === "SQLITE_FULL" ||
     storageFailure === "session_actor_reconciliation" ||
     storageFailure === "57014"
@@ -40,7 +41,7 @@ export function errorShapeFromError(
           ? errorShape(ErrorCodes.UNAVAILABLE, storageMessage, {
               ...metadata,
               retryable:
-                storageFailure === "SQLITE_FULL" &&
+                (storageFailure === "SQLITE_FULL" || storageFailure === "unavailable") &&
                 !hasSqliteWorkerOutcomeUnknown(error) &&
                 metadata.retryable !== false,
               details: { code: storageFailure },

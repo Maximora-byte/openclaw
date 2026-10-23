@@ -6,6 +6,34 @@ import { SqliteWorkerError, wrapSqliteWorkerError } from "../infra/sqlite-worker
 import { IncognitoSessionEndedError } from "../state/incognito-session-error.js";
 import { errorShapeFromError } from "./error-shape.js";
 
+it.each(["direct", "cleanup", "uncertain-cleanup", "retry-refused"])(
+  "renders a canonical unavailable outcome without changing retry authority (%s)",
+  (scenario) => {
+    const primary = new SqliteWorkerError("PRIVATE_ROLLBACK", "unavailable");
+    const cleanup =
+      scenario === "uncertain-cleanup"
+        ? new SqliteWorkerError("PRIVATE_CLEANUP", "outcome-unknown")
+        : new Error("PRIVATE_CLEANUP");
+    const error =
+      scenario === "direct" || scenario === "retry-refused"
+        ? primary
+        : new AggregateError([primary, cleanup], "PRIVATE_AGGREGATE", { cause: primary });
+    const result = errorShapeFromError(ErrorCodes.UNAVAILABLE, error, {
+      retryable: scenario !== "retry-refused",
+    });
+    expect(result).toMatchObject({
+      code: ErrorCodes.UNAVAILABLE,
+      details: { code: "unavailable" },
+      retryable: scenario !== "uncertain-cleanup" && scenario !== "retry-refused",
+    });
+    expect(result.message).toMatch(/connection|database/i);
+    expect(result.message).toMatch(/rolled back/i);
+    expect(result.message).toMatch(/nothing.*saved/i);
+    expect(result.message).toMatch(/retry|try again/i);
+    expect(result.message).not.toContain("PRIVATE_");
+  },
+);
+
 it.each([false, true])(
   "renders an unknown outcome with guidance and no retry grant (nested: %s)",
   (nested) => {

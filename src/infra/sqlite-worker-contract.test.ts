@@ -1,6 +1,9 @@
 import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
-import { classifyGatewayStorageFailure } from "./sqlite-error-diagnostics.js";
+import {
+  classifyGatewayStorageFailure,
+  isLocalStorageOutcomeError,
+} from "./sqlite-error-diagnostics.js";
 import {
   hasSqliteWorkerOutcomeUnknown,
   isSqliteWorkerError,
@@ -52,6 +55,27 @@ describe("worker failure causes", () => {
 });
 
 describe("worker outcome classification", () => {
+  it("presents canonical unavailability without changing execution classification", () => {
+    const unavailable = new SqliteWorkerError("PRIVATE_ROLLBACK", "unavailable");
+    expect(classifyGatewayStorageFailure(unavailable)).toBe("unavailable");
+    expect(isSqliteWorkerError(unavailable, "unavailable")).toBe(true);
+    expect(isLocalStorageOutcomeError(unavailable)).toBe(false);
+    const unknown = new SqliteWorkerError("PRIVATE_UNCONFIRMED", "outcome-unknown");
+    const wrapped = new Error("PRIVATE_WRAPPER", {
+      cause: new AggregateError([unavailable, unknown], "PRIVATE_MULTI"),
+    });
+    expect(classifyGatewayStorageFailure(wrapped)).toBe("session_actor_reconciliation");
+    expect(isLocalStorageOutcomeError(wrapped)).toBe(true);
+    expect(
+      classifyGatewayStorageFailure(
+        Object.assign(new Error("PRIVATE_PROVIDER"), {
+          name: "SqliteWorkerError",
+          code: "unavailable",
+        }),
+      ),
+    ).toBeUndefined();
+  });
+
   it.each(["errorCode", "code", "errcode", "errstr", "errorMessage", "message"])(
     "ignores a throwing %s field on an ordinary failure",
     (field) => {

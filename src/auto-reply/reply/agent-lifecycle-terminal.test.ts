@@ -32,6 +32,10 @@ describe("createAgentLifecycleTerminalBackstop", () => {
 
   it.each([
     {
+      code: "unavailable",
+      failure: new SqliteWorkerError("PRIVATE_ROLLBACK", "unavailable"),
+    },
+    {
       code: "session_actor_reconciliation",
       failure: new SqliteWorkerError("PRIVATE_UNCERTAIN_WRITE", "outcome-unknown"),
     },
