@@ -58,7 +58,9 @@ const STORAGE_FAILURE_COPY: Record<GatewayStorageFailure, string> = {
   transcript_writer_fenced:
     "This conversation changed while OpenClaw was working. Check its latest messages before continuing.",
   session_actor_reconciliation:
-    "OpenClaw couldn't confirm the last update to this conversation. Wait for current work to finish, then reopen the conversation. If it still fails, restart OpenClaw.",
+    "OpenClaw couldn't confirm the last update to this conversation. Some work may have been saved. Wait for current work to finish, then reopen the conversation and check its history before trying again. If it still fails, restart OpenClaw.",
+  "57014":
+    "PostgreSQL canceled a database operation or its statement timed out. Check the conversation for completed work before trying again. If it happens again, ask the operator to check PostgreSQL timeouts and server activity.",
 };
 
 const RUNTIME_COORDINATION_FAILURE_CODE_COPY: Readonly<Record<string, string>> = {

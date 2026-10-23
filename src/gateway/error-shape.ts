@@ -20,11 +20,13 @@ export function errorShapeFromError(
   const { message, ...metadata } = opts ?? {};
   const candidates = collectNestedErrorCandidates(error);
   const ended = candidates.find((candidate) => candidate instanceof IncognitoSessionEndedError);
-  const storageMessage = candidates.some(
-    (candidate) => classifyGatewayStorageFailure(candidate) === "SQLITE_FULL",
-  )
-    ? renderStorageFailureSummary("SQLITE_FULL")
-    : undefined;
+  const storageFailure = classifyGatewayStorageFailure(error);
+  const storageMessage =
+    storageFailure === "SQLITE_FULL" ||
+    storageFailure === "session_actor_reconciliation" ||
+    storageFailure === "57014"
+      ? renderStorageFailureSummary(storageFailure)
+      : undefined;
   const shape =
     error instanceof AgentDatabaseAdmissionError
       ? createAgentDatabaseAdmissionErrorShape(error.refusal)
@@ -37,9 +39,11 @@ export function errorShapeFromError(
         : storageMessage
           ? errorShape(ErrorCodes.UNAVAILABLE, storageMessage, {
               ...metadata,
-              // A retryable resource failure must not replay an unacknowledged write.
-              retryable: !hasSqliteWorkerOutcomeUnknown(error) && metadata.retryable !== false,
-              details: { code: "SQLITE_FULL" },
+              retryable:
+                storageFailure === "SQLITE_FULL" &&
+                !hasSqliteWorkerOutcomeUnknown(error) &&
+                metadata.retryable !== false,
+              details: { code: storageFailure },
             })
           : errorShape(code, message ?? formatErrorMessageWithCode(error), metadata);
   // Native in-process callers need the original typed failure; it must never

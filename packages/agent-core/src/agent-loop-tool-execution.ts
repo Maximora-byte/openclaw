@@ -2,8 +2,15 @@ import type { AgentEventSink } from "./agent-stream-response.js";
 import {
   getInternalToolExecutionPreparer,
   type InternalToolExecutionPreparation,
+  type InternalToolBatchLifecycle,
 } from "./internal-hooks.js";
-import { createErrorToolResult, createToolExecutionErrorResult } from "./tool-call-outcome.js";
+import type { AgentCoreStreamRuntimeDeps } from "./runtime-deps.js";
+import { createRejectedToolCallLauncher } from "./tool-batch-admission.js";
+import {
+  createErrorToolResult,
+  createToolExecutionErrorResult,
+  type FinalizedToolCallOutcome,
+} from "./tool-call-outcome.js";
 import {
   type AgentToolExecutionContext,
   runWithAgentToolExecutionContext,
@@ -40,6 +47,7 @@ export async function prepareToolCallExecution(
   executionContext: AgentToolExecutionContext,
   signal: AbortSignal | undefined,
   emit: AgentEventSink,
+  isLocalError?: AgentCoreStreamRuntimeDeps["isLocalError"],
 ): Promise<PreparedToolCallExecution> {
   const updateEvents: Promise<void>[] = [];
   let acceptingUpdates = true;
@@ -146,6 +154,9 @@ export async function prepareToolCallExecution(
             if (implementationStartError) {
               throw implementationStartError.error;
             }
+            if (isLocalError?.(error)) {
+              throw error;
+            }
             return {
               result: createToolExecutionErrorResult(error),
               isError: true,
@@ -194,6 +205,9 @@ export async function prepareToolCallExecution(
     );
   } catch (error) {
     await finishUpdates();
+    if (isLocalError?.(error)) {
+      throw error;
+    }
     return {
       kind: "immediate",
       outcome: {
@@ -208,6 +222,12 @@ export async function prepareToolCallExecution(
     closeUpdates();
     internalPreparation.dispose();
     await finishUpdates();
+    if (
+      internalPreparation.outcome.kind === "error" &&
+      isLocalError?.(internalPreparation.outcome.error)
+    ) {
+      throw internalPreparation.outcome.error;
+    }
     return {
       kind: "immediate",
       outcome:
@@ -234,4 +254,90 @@ export async function prepareToolCallExecution(
       ),
     readyPreparation.dispose,
   );
+}
+
+export type ToolPlanState = { executionStarted: boolean };
+
+export type ReadyPreparedToolCall = PreparedToolCall & { execution: ReadyToolCallExecution };
+
+export type FinalizedToolCallEntry = FinalizedToolCallOutcome | ReadyPreparedToolCall;
+
+export type StartedToolCall = {
+  index: number;
+  entry: ReadyPreparedToolCall;
+  outcome: Promise<ExecutedToolCallOutcome>;
+};
+
+type ParallelToolCallLaunches = {
+  started: StartedToolCall[];
+  completed: Array<Omit<StartedToolCall, "outcome"> & { outcome: ExecutedToolCallOutcome }>;
+  rejected?: { index: number; error: unknown };
+};
+
+export async function launchParallelToolCalls(
+  entries: FinalizedToolCallEntry[],
+  batchLifecycle: InternalToolBatchLifecycle | undefined,
+  toolPlan: ToolPlanState,
+): Promise<ParallelToolCallLaunches> {
+  const ready = entries.flatMap((entry, index) => ("kind" in entry ? [{ entry, index }] : []));
+  const launchRejectedBefore = createRejectedToolCallLauncher(entries, batchLifecycle);
+  const result: ParallelToolCallLaunches = { started: [], completed: [] };
+  let cursor = 0;
+  let finish!: () => void;
+  const done = new Promise<void>((resolve) => {
+    finish = resolve;
+  });
+  const launchNext = () => {
+    const current = ready[cursor++];
+    result.rejected ??= launchRejectedBefore(current?.index ?? entries.length);
+    if (!current || result.rejected) {
+      finish();
+      return;
+    }
+    const launchState: { outcome?: Promise<ExecutedToolCallOutcome> } = {};
+    let started = false;
+    let rejected = false;
+    const onStart = () => {
+      try {
+        batchLifecycle?.commitReadyCalls?.([
+          { toolCallId: current.entry.toolCall.id, args: current.entry.execution.args },
+        ]);
+      } catch (error) {
+        rejected = true;
+        result.rejected = { index: current.index, error };
+        finish();
+        throw error;
+      }
+      started = true;
+      toolPlan.executionStarted = true;
+      if (launchState.outcome) {
+        result.started.push({ ...current, outcome: launchState.outcome });
+      }
+      // Advance only from the final source-start callback so guard → commit → implementation stays
+      // adjacent while started bodies overlap; pre-source completion advances below without commit.
+      queueMicrotask(launchNext);
+    };
+    const outcome = current.entry.execution.execute(onStart);
+    launchState.outcome = outcome;
+    if (started) {
+      result.started.push({ ...current, outcome });
+    }
+    void outcome.then(
+      (completed) => {
+        if (!started && !rejected) {
+          result.completed.push({ ...current, outcome: completed });
+          queueMicrotask(launchNext);
+        }
+      },
+      (error: unknown) => {
+        if (!rejected) {
+          result.rejected ??= { index: current.index, error };
+          finish();
+        }
+      },
+    );
+  };
+  launchNext();
+  await done;
+  return result;
 }

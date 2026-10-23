@@ -3,9 +3,13 @@ import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion"
 import { createStreamedSteeringConfig, getSteeringAtCheckpoint } from "./agent-loop-steering.js";
 import {
   prepareToolCallExecution,
+  launchParallelToolCalls,
+  type ToolPlanState,
+  type FinalizedToolCallEntry,
+  type ReadyPreparedToolCall,
+  type StartedToolCall,
   type PreparedToolCall,
   type ExecutedToolCallOutcome,
-  type ReadyToolCallExecution,
 } from "./agent-loop-tool-execution.js";
 import {
   emitToolResultMessage,
@@ -30,12 +34,7 @@ import {
 import { isOpenClawSystemUpdateMessage, orderSystemUpdateMessages } from "./operator-messages.js";
 import { resolveAgentReasoningOption } from "./reasoning.js";
 import type { AgentCoreStreamRuntimeDeps } from "./runtime-deps.js";
-import {
-  admittedEntryIds,
-  admittedIds,
-  createRejectedToolCallLauncher,
-  toToolBatchCalls,
-} from "./tool-batch-admission.js";
+import { admittedEntryIds, admittedIds, toToolBatchCalls } from "./tool-batch-admission.js";
 import {
   combineExecutedToolBatches,
   resolveToolBatchTermination,
@@ -85,8 +84,6 @@ const TOOL_ADMISSION_FAILURE_DETAILS = {
   status: "blocked",
   deniedReason: "tool-admission",
 } as const;
-
-type ToolPlanState = { executionStarted: boolean };
 
 /** Run a prompt-started loop and emit events through a caller-owned sink. */
 export async function runAgentLoop(
@@ -176,6 +173,9 @@ async function runLoop(
   const stopIfAborted = async (): Promise<boolean> => {
     if (!signal?.aborted) {
       return false;
+    }
+    if (runtime?.isLocalError?.(signal.reason)) {
+      throw signal.reason;
     }
     // Persist an aborted assistant outcome so session post-processing does not
     // compact or continue from the preceding toolUse message.
@@ -300,6 +300,7 @@ async function runLoop(
             toolCalls,
             scheduling,
             scheduling.hasUnobservedAsyncToolResults,
+            runtime?.isLocalError,
           );
           if (batch.intervention) {
             toolLoopRecoveryState.criticalToolLoopSeen = true;
@@ -334,6 +335,7 @@ async function runLoop(
               remainingToolCalls,
               undefined,
               streamed.executedIds.size > 0,
+              runtime?.isLocalError,
             )
           : undefined;
       const batches = [...streamed.batches, ...(terminalToolBatch ? [terminalToolBatch] : [])];
@@ -366,6 +368,9 @@ async function runLoop(
         message.stopReason === "aborted" &&
         (!executedToolBatch?.terminateRun || signal?.aborted)
       ) {
+        if (signal?.aborted && runtime?.isLocalError?.(signal.reason)) {
+          throw signal.reason;
+        }
         if (signal?.aborted && !isTurnHandoffAbort(signal)) {
           await appendInterruptedTurnMessage(newMessages, emit);
         }
@@ -485,6 +490,7 @@ async function executeToolCalls(
   toolCalls = assistantMessage.content.filter((c) => c.type === "toolCall"),
   scheduling?: AsyncToolBatchScheduling,
   hasUnobservedAsyncToolResults = false,
+  isLocalError?: AgentCoreStreamRuntimeDeps["isLocalError"],
 ): Promise<ExecutedToolCallBatch> {
   if (config.completesToolTurn) {
     const inputScope = getInternalToolTurnInputScope(config.completesToolTurn);
@@ -502,6 +508,7 @@ async function executeToolCalls(
     validated: new Map(),
     onParallelStarted: scheduling?.onParallelStarted,
     hasUnobservedAsyncToolResults,
+    isLocalError,
     toolPlan,
     toolLoopRecoveryState,
     waitForPrevious: scheduling?.waitForPrevious,
@@ -568,6 +575,7 @@ type ToolBatchContext = {
   toolPlan: ToolPlanState;
   toolLoopRecoveryState: ToolLoopRecoveryState;
   waitForPrevious?: () => Promise<void>;
+  isLocalError?: AgentCoreStreamRuntimeDeps["isLocalError"];
 };
 
 type ResolvedToolCallOutcome =
@@ -609,6 +617,7 @@ async function executeToolCallGroups(
     }
 
     const entries: FinalizedToolCallEntry[] = [];
+    let started: StartedToolCall[] = [];
     try {
       // Sequential groups commit before preparing the next call. Parallel groups
       // prepare together, then commit in source order after their started work settles.
@@ -662,6 +671,8 @@ async function executeToolCallGroups(
         steeringMessages.length > 0
           ? undefined
           : await launchParallelToolCalls(entries, batch.lifecycle, batch.toolPlan);
+      started = launched?.started ?? [];
+      const startedIndices = new Set(started.map(({ index }) => index));
       // Streamed batches serialize admission until source execution begins.
       // Parallel bodies may overlap; exclusive tools retain the gate until finalization.
       if (!sequential && launched?.started.length && !launched.rejected) {
@@ -683,14 +694,16 @@ async function executeToolCallGroups(
       if (steeringMessages.length > 0 || fatal) {
         // Unlaunched rejected calls are released with the prepared calls they accompany.
         const skippedIds = [
-          ...admittedEntryIds(entries.slice(skippedIndex)),
+          ...admittedEntryIds(
+            entries.filter((_entry, index) => index >= skippedIndex && !startedIndices.has(index)),
+          ),
           ...admittedIds(toolCalls.slice(cursor), batch.validated),
         ];
         batch.lifecycle?.releaseSkippedCalls?.(skippedIds);
       }
       for (let index = skippedIndex; index < entries.length; index++) {
         const entry = entries[index];
-        if (!entry || !("kind" in entry)) {
+        if (!entry || !("kind" in entry) || startedIndices.has(index)) {
           continue;
         }
         // A sequential admission failure retains preparation until its synthetic
@@ -706,11 +719,15 @@ async function executeToolCallGroups(
       }
       if (launched) {
         // A later admission rejection cannot settle the batch before its active prefix.
-        await Promise.all(
-          launched.started.map(async ({ index, entry, outcome }) =>
-            settle(index, entry, await outcome),
-          ),
+        const settled = await Promise.allSettled(
+          started.map(async ({ index, entry, outcome }) => settle(index, entry, await outcome)),
         );
+        started = [];
+        for (const result of settled) {
+          if (result.status === "rejected") {
+            fatal ??= { error: result.reason };
+          }
+        }
       }
       if (batch.lifecycle?.observeOutcome) {
         // Streamed batches may execute concurrently; failure streaks follow source order.
@@ -734,6 +751,10 @@ async function executeToolCallGroups(
         }
       }
     } finally {
+      // A local persistence failure cannot release another accepted tool while it still runs.
+      if (started.length > 0) {
+        await Promise.allSettled(started.map(({ outcome }) => outcome));
+      }
       for (const entry of entries) {
         if ("kind" in entry) {
           entry.execution.dispose();
@@ -790,22 +811,6 @@ async function executeToolCallGroups(
 
 type ValidatedToolCallOutcome = PreparedToolCall | ImmediateToolCallOutcome;
 
-type ReadyPreparedToolCall = PreparedToolCall & { execution: ReadyToolCallExecution };
-
-type FinalizedToolCallEntry = FinalizedToolCallOutcome | ReadyPreparedToolCall;
-
-type StartedToolCall = {
-  index: number;
-  entry: ReadyPreparedToolCall;
-  outcome: Promise<ExecutedToolCallOutcome>;
-};
-
-type ParallelToolCallLaunches = {
-  started: StartedToolCall[];
-  completed: Array<Omit<StartedToolCall, "outcome"> & { outcome: ExecutedToolCallOutcome }>;
-  rejected?: { index: number; error: unknown };
-};
-
 async function prepareToolCallEntry(
   batch: ToolBatchContext,
   toolCall: AgentToolCall,
@@ -846,78 +851,11 @@ async function prepareToolCallEntry(
     },
     batch.signal,
     batch.emit,
+    batch.isLocalError,
   );
   return execution.kind === "immediate"
     ? await finalizeExecutedToolCall(batch, preparation, execution.outcome, preparation.args)
     : { ...preparation, execution };
-}
-
-async function launchParallelToolCalls(
-  entries: FinalizedToolCallEntry[],
-  batchLifecycle: InternalToolBatchLifecycle | undefined,
-  toolPlan: ToolPlanState,
-): Promise<ParallelToolCallLaunches> {
-  const ready = entries.flatMap((entry, index) => ("kind" in entry ? [{ entry, index }] : []));
-  const launchRejectedBefore = createRejectedToolCallLauncher(entries, batchLifecycle);
-  const result: ParallelToolCallLaunches = { started: [], completed: [] };
-  let cursor = 0;
-  let finish!: () => void;
-  const done = new Promise<void>((resolve) => {
-    finish = resolve;
-  });
-  const launchNext = () => {
-    const current = ready[cursor++];
-    result.rejected ??= launchRejectedBefore(current?.index ?? entries.length);
-    if (!current || result.rejected) {
-      finish();
-      return;
-    }
-    const launchState: { outcome?: Promise<ExecutedToolCallOutcome> } = {};
-    let started = false;
-    let rejected = false;
-    const onStart = () => {
-      try {
-        batchLifecycle?.commitReadyCalls?.([
-          { toolCallId: current.entry.toolCall.id, args: current.entry.execution.args },
-        ]);
-      } catch (error) {
-        rejected = true;
-        result.rejected = { index: current.index, error };
-        finish();
-        throw error;
-      }
-      started = true;
-      toolPlan.executionStarted = true;
-      if (launchState.outcome) {
-        result.started.push({ ...current, outcome: launchState.outcome });
-      }
-      // Advance only from the final source-start callback so guard → commit → implementation stays
-      // adjacent while started bodies overlap; pre-source completion advances below without commit.
-      queueMicrotask(launchNext);
-    };
-    const outcome = current.entry.execution.execute(onStart);
-    launchState.outcome = outcome;
-    if (started) {
-      result.started.push({ ...current, outcome });
-    }
-    void outcome.then(
-      (completed) => {
-        if (!started && !rejected) {
-          result.completed.push({ ...current, outcome: completed });
-          queueMicrotask(launchNext);
-        }
-      },
-      (error: unknown) => {
-        if (!rejected) {
-          result.rejected = { index: current.index, error };
-          finish();
-        }
-      },
-    );
-  };
-  launchNext();
-  await done;
-  return result;
 }
 
 async function resolveToolCallTool(
@@ -954,6 +892,9 @@ async function resolveToolCallTool(
     }
     resolution = { kind: "resolved", ...(tool ? { tool } : {}) };
   } catch (error) {
+    if (batch.isLocalError?.(error)) {
+      throw error;
+    }
     resolution = { kind: "error", error };
   }
   batch.resolved.set(toolCall, resolution);
@@ -999,6 +940,9 @@ async function prepareToolCall(
     }
     return validation;
   } catch (error) {
+    if (batch.isLocalError?.(error)) {
+      throw error;
+    }
     return immediateToolCallError(coerceErrorMessage(error));
   }
 }
@@ -1072,6 +1016,9 @@ async function finalizeExecutedToolCall(
         isError = afterResult.isError ?? isError;
       }
     } catch (error) {
+      if (batch.isLocalError?.(error)) {
+        throw error;
+      }
       result = createErrorToolResult(coerceErrorMessage(error));
       isError = true;
     }

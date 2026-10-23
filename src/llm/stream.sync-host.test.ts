@@ -8,6 +8,8 @@ import type {
 } from "@openclaw/llm-core";
 import { describe, expect, it, vi } from "vitest";
 import { createZeroUsageFixture } from "../agents/test-helpers/usage-fixtures.js";
+import { decodePostgresError } from "../infra/postgres-sync/protocol.js";
+import { classifyGatewayStorageFailure } from "../infra/sqlite-error-diagnostics.js";
 import { bindModelLlmRuntime } from "./model-runtime-binding.js";
 import { stream, streamSimple } from "./stream.js";
 import { createAssistantMessageEventStream } from "./utils/event-stream.js";
@@ -80,5 +82,24 @@ describe("LLM synchronous stream transport host", () => {
       errorCode: "SQLITE_BUSY",
       errorMessage: "private native detail",
     });
+
+    providerStream.mockImplementation(() => {
+      throw new Error("Outer runtime failure", {
+        cause: decodePostgresError({
+          name: "error",
+          message: "canceling statement due to user request PRIVATE_STORAGE_DETAIL",
+          code: "57014",
+        }),
+      });
+    });
+    for (const run of [stream, streamSimple]) {
+      const failure = await run(boundModel, { messages: [] }).result();
+      expect(failure).toMatchObject({
+        stopReason: "error",
+        errorCode: "57014",
+        errorType: "PostgresQueryCanceledError",
+      });
+      expect(classifyGatewayStorageFailure(failure)).toBe("57014");
+    }
   });
 });

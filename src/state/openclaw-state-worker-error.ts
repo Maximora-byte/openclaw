@@ -3,6 +3,7 @@ import {
   isSqliteNativeOpenFailure,
   markSqliteNativeOpenFailure,
 } from "../infra/sqlite-error-diagnostics.js";
+import { isSqliteWorkerError, SqliteWorkerError } from "../infra/sqlite-worker-contract.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import {
   DATABASE_QUARANTINE_READ_CLEANUP_ERROR_NAME,
@@ -106,9 +107,11 @@ export function encodeOpenClawStateWorkerError(
         return undefined;
       }
       const nativeOpen = isSqliteNativeOpenFailure(current);
+      const outcomeUnknown = isSqliteWorkerError(current, "outcome-unknown");
       const stateDatabasePath = readOpenClawStateDatabaseFailurePath(current);
       const errcode = "errcode" in current ? current.errcode : undefined;
       canonical ||=
+        outcomeUnknown ||
         stateDatabasePath !== undefined ||
         nativeOpen ||
         isNativeErrorCode(errcode) ||
@@ -119,7 +122,12 @@ export function encodeOpenClawStateWorkerError(
       const errno = "errno" in current ? current.errno : undefined;
       nodes.push({
         ...identity,
-        name,
+        // The reserved pair may only originate from the canonical worker error.
+        name: outcomeUnknown
+          ? "SqliteWorkerError"
+          : name === "SqliteWorkerError" && code === "outcome-unknown"
+            ? "Error"
+            : name,
         message,
         ...(typeof code === "string" || (typeof code === "number" && Number.isFinite(code))
           ? { code }
@@ -158,6 +166,7 @@ function decodeErrorGraph(
         (node) =>
           node.stateDatabasePath !== undefined ||
           node.nativeOpen === true ||
+          (node.name === "SqliteWorkerError" && node.code === "outcome-unknown") ||
           isNativeErrorCode(node.errcode) ||
           isSqliteLockError(node) ||
           (node.type === "aggregate" &&
@@ -167,7 +176,11 @@ function decodeErrorGraph(
     ) {
       return undefined;
     }
-    const errors = nodes.map(createError);
+    const errors = nodes.map((node) =>
+      node.type === "error" && node.name === "SqliteWorkerError" && node.code === "outcome-unknown"
+        ? new SqliteWorkerError(node.message, "outcome-unknown")
+        : createError(node),
+    );
     const decodeValue = (entry: ErrorValue): unknown =>
       "ref" in entry ? errors[entry.ref] : "value" in entry ? entry.value : undefined;
     for (const [index, node] of nodes.entries()) {

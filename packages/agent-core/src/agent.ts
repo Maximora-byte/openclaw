@@ -426,6 +426,7 @@ export class Agent {
         (event) => this.processEvents(event),
         signal,
         this.streamFn,
+        this.runtime,
       );
     });
   }

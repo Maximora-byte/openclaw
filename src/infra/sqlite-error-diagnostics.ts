@@ -6,6 +6,8 @@ import {
 } from "@openclaw/normalization-core/error-coercion";
 import { asOptionalObjectRecord, isRecord } from "@openclaw/normalization-core/record-coerce";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
+import { POSTGRES_QUERY_CANCELED_ERROR_NAME } from "./postgres-sync/protocol.js";
+import { hasSqliteWorkerOutcomeUnknown, isSqliteWorkerError } from "./sqlite-worker-contract.js";
 
 const STORAGE_ERRORS = [
   ["SQLITE_BUSY", "database is locked", 5],
@@ -21,25 +23,69 @@ const STORAGE_ERRORS = [
     -2,
   ],
 ] as const;
-export type GatewayStorageFailure = (typeof STORAGE_ERRORS)[number][0];
+export type GatewayStorageFailure = (typeof STORAGE_ERRORS)[number][0] | "57014";
+
+/** These outcomes must leave tool execution without becoming model-visible tool errors. */
+export function isLocalStorageOutcomeError(error: unknown): boolean {
+  const failure = classifyGatewayStorageFailure(error);
+  // Presentation can select a primary failure, but every uncertain write still fences continuation.
+  return (
+    hasSqliteWorkerOutcomeUnknown(error) ||
+    failure === "session_actor_reconciliation" ||
+    failure === "57014"
+  );
+}
 
 /** Classify native errors before flattening; legacy rows require exact known messages. */
 export function classifyGatewayStorageFailure(error: unknown): GatewayStorageFailure | undefined {
+  let primaryError = error;
+  let outcomeUnknown = false;
+  const seen = new Set<unknown>();
+  // Cleanup envelopes explicitly identify the operation's primary failure.
+  // Secondary cleanup diagnostics must not replace its user-facing outcome.
+  for (
+    let current = error;
+    current instanceof Error && !seen.has(current);
+    current = current.cause
+  ) {
+    seen.add(current);
+    outcomeUnknown ||= isSqliteWorkerError(current, "outcome-unknown");
+    if (current instanceof AggregateError) {
+      if (!(current.cause instanceof Error) || current.errors[0] !== current.cause) {
+        break;
+      }
+      primaryError = current.cause;
+    }
+  }
+  if (outcomeUnknown || hasSqliteWorkerOutcomeUnknown(primaryError)) {
+    return "session_actor_reconciliation";
+  }
+  let cancellation: GatewayStorageFailure | undefined;
   let reconciliation: GatewayStorageFailure | undefined;
-  for (const candidate of collectNestedErrorCandidates(error)) {
+  for (const candidate of collectNestedErrorCandidates(primaryError)) {
     const failure = classifyStorageFailure(candidate);
     if (failure === "session_actor_reconciliation") {
       reconciliation = failure;
+    } else if (failure === "57014") {
+      cancellation = failure;
     } else if (failure) {
       return failure;
     }
   }
-  return reconciliation;
+  return reconciliation ?? cancellation;
 }
 
 function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefined {
   const fields = typeof error === "string" ? { message: error } : isRecord(error) ? error : {};
   const code = fields.errorCode ?? fields.code;
+  // The decoder's name survives the actor's name/message-only error projection.
+  // A provider's unrelated 57014 code must not acquire storage semantics.
+  if (
+    fields.errorType === POSTGRES_QUERY_CANCELED_ERROR_NAME ||
+    fields.name === POSTGRES_QUERY_CANCELED_ERROR_NAME
+  ) {
+    return "57014";
+  }
   if (code === "ENOSPC") {
     return "SQLITE_FULL";
   }

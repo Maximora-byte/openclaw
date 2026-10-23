@@ -4,6 +4,7 @@
 import { defaultApiRegistry, defaultLlmRuntime } from "@openclaw/ai/internal/runtime";
 import { registerBuiltInApiProviders } from "@openclaw/ai/providers";
 import { makeZeroUsageSnapshot } from "../agents/usage.js";
+import { POSTGRES_QUERY_CANCELED_ERROR_NAME } from "../infra/postgres-sync/protocol.js";
 import { classifyGatewayStorageFailure } from "../infra/sqlite-error-diagnostics.js";
 import { assertProviderAuthAuthority } from "../plugins/provider-auth-authority.js";
 import { runInDetachedAsyncContext } from "../shared/detached-async-context.js";
@@ -32,6 +33,7 @@ const ensureTransportRuntimeHost = createLazyPromise(
 );
 
 function createRuntimeHostErrorMessage(model: Model, error: unknown): AssistantMessage {
+  const storageFailure = classifyGatewayStorageFailure(error);
   return {
     role: "assistant",
     content: [],
@@ -41,7 +43,8 @@ function createRuntimeHostErrorMessage(model: Model, error: unknown): AssistantM
     usage: makeZeroUsageSnapshot(),
     stopReason: "error",
     errorMessage: error instanceof Error ? error.message : String(error),
-    errorCode: classifyGatewayStorageFailure(error),
+    errorCode: storageFailure,
+    errorType: storageFailure === "57014" ? POSTGRES_QUERY_CANCELED_ERROR_NAME : undefined,
     timestamp: Date.now(),
   };
 }

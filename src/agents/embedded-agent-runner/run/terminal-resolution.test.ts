@@ -2,6 +2,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { makeTextToolResult } from "../../../../test/helpers/text-tool-result.js";
 import { SILENT_REPLY_TOKEN } from "../../../auto-reply/tokens.js";
 import { classifyAgentExecResult } from "../../../commands/agent-exec-result.js";
+import { resolveCronPayloadOutcome } from "../../../cron/isolated-agent/helpers.js";
+import { decodePostgresError } from "../../../infra/postgres-sync/protocol.js";
+import { classifyGatewayStorageFailure } from "../../../infra/sqlite-error-diagnostics.js";
+import { SqliteWorkerError } from "../../../infra/sqlite-worker-contract.js";
 import { createTestAdmittedRunContext } from "../../admitted-run-context.test-support.js";
 import { createMediaGenerationOperation } from "../../media-generation-activity.js";
 import { resetGeneratedMediaTaskActivityForTests } from "../../media-generation-activity.test-support.js";
@@ -137,6 +141,53 @@ describe("terminal resolution", () => {
     expect(resolved.result.meta.error).toMatchObject({ message: "Authentication failed" });
     expect(resolved.result.meta.suppressErrorNotice).not.toBe(true);
   });
+
+  it.each([
+    [
+      new SqliteWorkerError("private native diagnostic", "outcome-unknown"),
+      "session_actor_reconciliation",
+    ],
+    [
+      decodePostgresError({ name: "error", message: "private native diagnostic", code: "57014" }),
+      "57014",
+    ],
+  ] as const)(
+    "preserves storage guidance through the terminal result and cron (%s)",
+    async (error, code) => {
+      const input = makeTerminalInput({
+        assistant: textAssistant("Completed-looking partial answer."),
+        attemptOverrides: {
+          terminal: { kind: "failed", source: "prompt", error },
+          replayMetadata: { hadPotentialSideEffects: true, replaySafe: false },
+        },
+        payloadsWithToolMedia: [],
+      });
+      expect(classifyGatewayStorageFailure(error)).toBe(code);
+      const resolved = await resolveEmbeddedRunTerminal(input);
+      expectComplete(resolved);
+      expect(resolved.result.meta.error).toMatchObject({
+        kind: "incomplete_turn",
+        fallbackSafe: false,
+      });
+      expect(input.sessionPromptState.activateInternalPrompt).not.toHaveBeenCalled();
+      const cron = resolveCronPayloadOutcome({
+        payloads: resolved.result.payloads ?? [],
+        runLevelError: resolved.result.meta.error,
+        finalAssistantVisibleText: resolved.result.meta.finalAssistantVisibleText,
+        terminalReplyDisposition: resolved.result.meta.terminalReply?.disposition,
+      });
+      expect(cron.hasFatalErrorPayload).toBe(true);
+      for (const text of [
+        resolved.result.meta.error?.message,
+        cron.summary,
+        cron.embeddedRunError,
+        ...cron.deliveryPayloads.map((p) => p.text),
+      ]) {
+        expect(text).toMatch(/check|reopen|retry/i);
+        expect(text).toMatch(code === "57014" ? /cancel/i : /confirm|saved/i);
+      }
+    },
+  );
 
   it("keeps external cancellation ahead of a failed attempt during final result construction", async () => {
     const assistant = emptyAssistant({ stopReason: "stop" });

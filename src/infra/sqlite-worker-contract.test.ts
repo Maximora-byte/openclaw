@@ -46,7 +46,7 @@ describe("worker failure causes", () => {
       );
       expect(wrapped.cause).toBeInstanceOf(AggregateError);
       expect(wrapped.cause).toMatchObject({ errors: [failure, storageFailure] });
-      expect(classifyGatewayStorageFailure(wrapped)).toBe("SQLITE_FULL");
+      expect(classifyGatewayStorageFailure(wrapped)).toBe("session_actor_reconciliation");
     },
   );
 });

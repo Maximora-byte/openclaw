@@ -117,7 +117,7 @@ export function createAgentDatabaseExecution(
   const reportCleanupFailure = (error: unknown) => {
     // Diagnostic failures cannot turn a committed command into a replayable failure.
     try {
-      log.warn(`Agent database idle cleanup failed: ${formatErrorMessage(error)}`);
+      log.warn(`Agent database cleanup failed: ${formatErrorMessage(error)}`);
     } catch {
       // The resource owner still retains the cleanup failure.
     }
@@ -286,10 +286,21 @@ export function createAgentDatabaseExecution(
             await closeNative(current);
           }
         } catch (cleanupError) {
+          reportCleanupFailure(cleanupError);
+          const primary = error instanceof Error ? error : new Error(String(error));
           throw retainSqliteWorkerErrorCode(
-            new AggregateError([error, cleanupError], "Agent operation and cleanup failed", {
-              cause: error,
-            }),
+            Object.assign(
+              new Error(primary.message, {
+                cause: new AggregateError(
+                  [error, cleanupError],
+                  "Agent operation and cleanup failed",
+                  {
+                    cause: error,
+                  },
+                ),
+              }),
+              { name: primary.name },
+            ),
             error,
           );
         }
