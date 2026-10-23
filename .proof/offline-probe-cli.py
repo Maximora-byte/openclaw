@@ -83,11 +83,14 @@ def invoke(args, env, state, stdin=None):
     return result
 
 
-def profiles(agent):
+def profiles(state):
     # Subprocesses have exited before this read-only inspection of fixture-owned state.
-    db = sqlite3.connect((agent / "openclaw-agent.sqlite").as_uri() + "?mode=ro", uri=True)
+    # The public SDK writes fresh main-agent credentials to the canonical shared store.
+    db = sqlite3.connect((state / "state/openclaw.sqlite").as_uri() + "?mode=ro", uri=True)
     try:
-        row = db.execute("SELECT store_json FROM auth_profile_store WHERE store_key = 'primary'").fetchone()
+        owner = db.execute("SELECT value_json FROM config_machine_state WHERE state_key = 'auth.sharedStore'").fetchone()
+        assert json.loads(owner[0]) == {"location": "state-db"}, "Unexpected auth store owner"
+        row = db.execute("SELECT value_json FROM config_machine_state WHERE state_key = 'authProfiles.store'").fetchone()
         return json.loads(row[0])["profiles"]
     finally:
         db.close()
@@ -124,14 +127,14 @@ def run_case(mode, endpoint):
         if mode == "store":
             invoke(CLI + ["secrets", "store", "set", "CLI_PROOF_API_KEY", "--kind", "secret"],
                    env, state, VALUE + "\n")
-        before = profiles(agent)
+        before = profiles(state)
         start = len(Endpoint.requests)
         command = ["models", "status", "--agent", "main", "--probe", "--probe-provider", PROVIDER,
                    "--probe-profile", PROFILE, "--probe-max-tokens", "8", "--probe-timeout", "15000", "--json"]
         result = invoke(CLI + command, env, state)
         rows = json.loads(result.stdout)["auth"]["probes"]["results"]
         observed = Endpoint.requests[start:]
-        after = profiles(agent)
+        after = profiles(state)
         expected = "unknown" if mode == "missing" else "ok"
         if len(rows) != 1 or rows[0].get("status") != expected:
             raise RuntimeError("Unexpected probe result: " + sanitize(json.dumps(rows), state))
