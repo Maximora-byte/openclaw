@@ -56,7 +56,6 @@ function createProfileSyncResult(
   overrides: Partial<MatrixProfileSyncResult> = {},
 ): MatrixProfileSyncResult {
   return {
-    skipped: false,
     displayNameUpdated: false,
     avatarUpdated: false,
     resolvedAvatarUrl: null,
