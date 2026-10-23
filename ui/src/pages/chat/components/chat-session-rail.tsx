@@ -10,6 +10,7 @@ import { markdownBlocksRef } from "../../../components/markdown-element-refs-sol
 import { Icon } from "../../../components/solid/icon.tsx";
 import { PanelEmptyState } from "../../../components/solid/panel-empty-state.tsx";
 import { PanelLoadingSkeleton } from "../../../components/solid/panel-loading-skeleton.tsx";
+import { registerChatRailEnglish } from "../../../i18n/locales/en-chat-rail.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import type { MessageGroup as MessageGroupData } from "../../../lib/chat/chat-types.ts";
 import { cancelLayout, scheduleLayout } from "../../../lib/layout-frame.ts";
@@ -27,6 +28,8 @@ import { MessageGroup } from "./chat-message-group-view.tsx";
 import { StreamGroup } from "./chat-message-stream-view.tsx";
 import type { ChatModelControlsProps } from "./chat-model-controls.tsx";
 import { SessionRailComposer, sessionRailQuestion } from "./chat-session-rail-composer.tsx";
+
+registerEnglishCatalog(registerChatRailEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

@@ -4,6 +4,7 @@ import type {
   SessionDiffFile,
   SessionsDiffResult,
 } from "../../../../../packages/gateway-protocol/src/index.js";
+import { registerChatDiffEnglish } from "../../../i18n/locales/en-chat-diff.ts";
 import type { SessionDiffGapDirection } from "../../../lib/chat/session-diff-gaps.ts";
 import type { pairSessionDiffLines } from "../../../lib/chat/session-diff-split.ts";
 import type { DiffLine } from "../../../lib/chat/tool-call-diff.ts";
@@ -17,6 +18,8 @@ import type {
 import type { SessionDiffMode } from "./session-diff-preferences.ts";
 import type { SessionDiffSyncMobileData } from "./session-diff-sync-mobile.tsx";
 import type { DiffValue, FileView } from "./session-diff-types.ts";
+
+registerChatDiffEnglish();
 
 export type SessionDiffViewBindings = {
   props: SessionDiffProps;

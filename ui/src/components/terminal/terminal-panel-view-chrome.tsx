@@ -1,14 +1,17 @@
 import { For, Loading, Show } from "solid-js";
-import { t } from "../../lib/reactive/i18n.ts";
+import { registerTerminalEnglish } from "../../i18n/locales/en-terminal.ts";
+import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
 import { nativeListener } from "../../lib/solid-native-listener.ts";
 import { Icon } from "../solid/icon.tsx";
 import { PanelEmptyState } from "../solid/panel-empty-state.tsx";
 import { PanelIconButton } from "../solid/panel-icon-button.tsx";
 import { PanelLoadingSkeleton } from "../solid/panel-loading-skeleton.tsx";
-import { useScrollState } from "../solid/scroll-state.ts";
 import "../tooltip.ts";
 import "../../styles/session-panel-rail.css";
+import { useScrollState } from "../solid/scroll-state.ts";
 import type { TerminalPanelViewState } from "./terminal-panel-view-types.ts";
+
+registerEnglishCatalog(registerTerminalEnglish);
 
 type TerminalSessionPickerState = TerminalPanelViewState["picker"];
 

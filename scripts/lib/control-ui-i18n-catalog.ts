@@ -17,9 +17,13 @@ import { registerChatCameraEnglish } from "../../ui/src/i18n/locales/en-chat-cam
 import { registerChatCiEnglish } from "../../ui/src/i18n/locales/en-chat-ci.ts";
 import { registerChatCommandResultsEnglish } from "../../ui/src/i18n/locales/en-chat-command-results.ts";
 import { registerChatComposerEnglish } from "../../ui/src/i18n/locales/en-chat-composer.ts";
+import { registerChatDetailsEnglish } from "../../ui/src/i18n/locales/en-chat-details.ts";
+import { registerChatDiffEnglish } from "../../ui/src/i18n/locales/en-chat-diff.ts";
+import { registerChatFilesEnglish } from "../../ui/src/i18n/locales/en-chat-files.ts";
 import { registerChatGoalsEnglish } from "../../ui/src/i18n/locales/en-chat-goals.ts";
 import { registerChatMessageMetadataEnglish } from "../../ui/src/i18n/locales/en-chat-message-metadata.ts";
 import { registerChatProviderReviewEnglish } from "../../ui/src/i18n/locales/en-chat-provider-review.ts";
+import { registerChatRailEnglish } from "../../ui/src/i18n/locales/en-chat-rail.ts";
 import { registerChatSessionEnglish } from "../../ui/src/i18n/locales/en-chat-session.ts";
 import { registerChatToolContentEnglish } from "../../ui/src/i18n/locales/en-chat-tool-content.ts";
 import { registerClawsEnglish } from "../../ui/src/i18n/locales/en-claws.ts";
@@ -65,6 +69,7 @@ import { registerSkillWorkshopEnglish } from "../../ui/src/i18n/locales/en-skill
 import { registerSkillsBrowserEnglish } from "../../ui/src/i18n/locales/en-skills-browser.ts";
 import { registerSubtitlesEnglish } from "../../ui/src/i18n/locales/en-subtitles.ts";
 import { registerSystemsEnglish } from "../../ui/src/i18n/locales/en-systems.ts";
+import { registerTerminalEnglish } from "../../ui/src/i18n/locales/en-terminal.ts";
 import { registerToolDiagnosticsEnglish } from "../../ui/src/i18n/locales/en-tool-diagnostics.ts";
 import { registerTranscriptsEnglish } from "../../ui/src/i18n/locales/en-transcripts.ts";
 import { registerUpdateActionsEnglish } from "../../ui/src/i18n/locales/en-update-actions.ts";
@@ -105,6 +110,11 @@ const sourceFiles = [
   "en-chat-goals.ts",
   "en-chat-message-metadata.ts",
   "en-chat-provider-review.ts",
+  "en-chat-details.ts",
+  "en-chat-diff.ts",
+  "en-chat-files.ts",
+  "en-chat-rail.ts",
+  "en-terminal.ts",
   "en-chat-session.ts",
   "en-chat-tool-content.ts",
   "en-claws.ts",
@@ -236,6 +246,8 @@ export function loadControlUiSourceCatalog(): TranslationMap {
     // Preserve partial-fragment key order while keeping shared labels eager.
     {
       ...en,
+      configView: registerSettingsEnglish.catalog.configView,
+      terminal: registerTerminalEnglish.catalog.terminal,
       aboutPage: registerAboutEnglish.catalog.aboutPage,
       dashboardsPage: registerDashboardsEnglish.catalog.dashboardsPage,
       agentChip,
@@ -248,6 +260,10 @@ export function loadControlUiSourceCatalog(): TranslationMap {
       chat: {
         ...en.chat,
         ...registerChatSessionEnglish.catalog.chat,
+        rail: registerChatRailEnglish.catalog.chat.rail,
+        workspaceFiles: registerChatFilesEnglish.catalog.chat.workspaceFiles,
+        sessionDiff: registerChatDiffEnglish.catalog.chat.sessionDiff,
+        sessionDetails: registerChatDetailsEnglish.catalog.chat.sessionDetails,
         commands: registerCommandPaletteEnglish.catalog.chat.commands,
         welcome: registerCommandPaletteEnglish.catalog.chat.welcome,
         messages: registerChatMessageMetadataEnglish.catalog.chat.messages,

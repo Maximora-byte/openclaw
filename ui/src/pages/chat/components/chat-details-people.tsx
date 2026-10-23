@@ -8,11 +8,14 @@ import {
   type PersonActivityRouting,
 } from "../../../components/person-activity-link.ts";
 import { ParticipantAvatar } from "../../../components/solid/viewer-facepile.tsx";
+import { registerChatDetailsEnglish } from "../../../i18n/locales/en-chat-details.ts";
 import { registerChatSessionEnglish } from "../../../i18n/locales/en-chat-session.ts";
 import { sessionParticipantIdentityKey } from "../../../lib/chat/sender-label.ts";
-import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import "./chat-details-people.css";
+import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { createLayoutMeasurement } from "../../../lib/reactive/layout-measurement.ts";
+
+registerEnglishCatalog(registerChatDetailsEnglish);
 
 registerEnglishCatalog(registerChatSessionEnglish);
 

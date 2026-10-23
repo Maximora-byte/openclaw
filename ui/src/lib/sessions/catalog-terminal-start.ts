@@ -6,6 +6,9 @@ import {
   type TerminalOpenResult,
 } from "../../components/terminal/terminal-connection.ts";
 import { t } from "../../i18n/index.ts";
+import { registerTerminalEnglish } from "../../i18n/locales/en-terminal.ts";
+
+registerTerminalEnglish();
 
 type TerminalSink = Parameters<TerminalConnection["open"]>[1];
 type PreparedTerminal = {

@@ -9,7 +9,8 @@ import { useSessionMenuEntries } from "../../../components/session-menu-view.tsx
 import { createSessionOwnerMenu } from "../../../components/session-owner-menu.ts";
 import { Icon, type IconName } from "../../../components/solid/icon.tsx";
 import type { MenuControls, MenuEntry, MenuItem } from "../../../components/solid/menu.tsx";
-import { t } from "../../../lib/reactive/i18n.ts";
+import { registerChatDetailsEnglish } from "../../../i18n/locales/en-chat-details.ts";
+import { registerEnglishCatalog, t } from "../../../lib/reactive/i18n.ts";
 import { listen } from "../../../lib/reactive/listener.ts";
 import { isChatBubbleMode, setChatBubbleMode } from "../chat-bubble-mode.ts";
 import { createMobileHeaderSessionMenu } from "./chat-header-session-menu-mobile.tsx";
@@ -21,6 +22,8 @@ import type {
 import { useChatQuickActionEntries } from "./chat-quick-action.tsx";
 import { useChatSessionSharingMenu } from "./chat-session-sharing-menu.tsx";
 import { canManageChatSessionSharing } from "./chat-session-sharing-shared.tsx";
+
+registerEnglishCatalog(registerChatDetailsEnglish);
 
 const COMPACT_MENU_VIEW_BY_VALUE: Record<string, CompactMenuView> = {
   "compact:open-sharing": "sharing",
