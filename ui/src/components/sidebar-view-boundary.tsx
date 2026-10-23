@@ -8,7 +8,7 @@ export function SidebarViewBoundary(
   return (
     <Errored
       fallback={(_error, reset) => (
-        <div class="sidebar-view-loading" role="alert">
+        <div class="sidebar-view-loading sidebar-session-error callout danger" role="alert">
           <span>{t("lazyView.errorTitle")}</span>
           <button class="btn btn--sm" type="button" onClick={reset}>
             {t("common.retry")}
@@ -20,13 +20,18 @@ export function SidebarViewBoundary(
         fallback={
           props.fallback ?? (
             <div
-              class="sidebar-view-loading"
+              class="sidebar-view-loading sidebar-recent-sessions__list"
               role="status"
               aria-label={t("common.loading")}
               aria-busy="true"
             >
               <Repeat count={4}>
-                {() => <span class="skeleton skeleton-line" aria-hidden="true" />}
+                {() => (
+                  <span
+                    class="sidebar-session-tree__loading skeleton skeleton-line"
+                    aria-hidden="true"
+                  />
+                )}
               </Repeat>
             </div>
           )

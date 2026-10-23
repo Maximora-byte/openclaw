@@ -5,7 +5,6 @@ import { t } from "../../lib/reactive/i18n.ts";
 import type { SourceProjection } from "../../lib/reactive/projection.ts";
 import { showToast } from "../../lib/toast.ts";
 import type { ClawCreatorFlow } from "./creator-flow.ts";
-import "../../styles/claw-creator-review.css";
 
 type CreatorView = SourceProjection<ClawCreatorFlow, ClawCreatorFlow>;
 

@@ -17,6 +17,8 @@ import { renderSidebarRail } from "./app-sidebar-rail.tsx";
 import "../styles/sidebar-reorder.css";
 import "../styles/app-sidebar.css";
 import "../styles/sidebar-rail.css";
+import "../styles/sidebar-pinned-agents.css";
+import "../styles/sidebar-agent-roster.css";
 import type { SessionCatalogGroupsRenderer } from "./app-sidebar-session-catalog-render.tsx";
 import type { CatalogSessionMenuRequest } from "./app-sidebar-session-catalogs.ts";
 import { renderSessionListToolbar } from "./app-sidebar-session-filter-summary.tsx";
