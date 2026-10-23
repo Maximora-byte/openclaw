@@ -35,13 +35,17 @@ function readOwnErrorDataProperty(value: object, key: string): unknown {
 
 /** These outcomes must leave tool execution without becoming model-visible tool errors. */
 export function isLocalStorageOutcomeError(error: unknown): boolean {
-  const failure = classifyGatewayStorageFailure(error);
   // Presentation can select a primary failure, but every uncertain write still fences continuation.
-  return (
-    hasSqliteWorkerOutcomeUnknown(error) ||
-    failure === "session_actor_reconciliation" ||
-    failure === "57014"
-  );
+  if (hasSqliteWorkerOutcomeUnknown(error)) {
+    return true;
+  }
+  try {
+    const failure = classifyGatewayStorageFailure(error);
+    return failure === "session_actor_reconciliation" || failure === "57014";
+  } catch {
+    // Optional diagnostics must not replace an ordinary tool failure.
+    return false;
+  }
 }
 
 /** Classify native errors before flattening; legacy rows require exact known messages. */
@@ -88,7 +92,8 @@ export function classifyGatewayStorageFailure(error: unknown): GatewayStorageFai
 
 function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefined {
   const fields = typeof error === "string" ? { message: error } : isRecord(error) ? error : {};
-  const code = fields.errorCode ?? fields.code;
+  const code =
+    readOwnErrorDataProperty(fields, "errorCode") ?? readOwnErrorDataProperty(fields, "code");
   // The decoder's name survives the actor's name/message-only error projection.
   // A provider's unrelated 57014 code must not acquire storage semantics.
   if (
@@ -109,7 +114,7 @@ function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefin
   ) {
     return "SQLITE_IOERR";
   }
-  const nativeCode = fields.errcode;
+  const nativeCode = readOwnErrorDataProperty(fields, "errcode");
   const primaryCode =
     typeof nativeCode === "number" && Number.isInteger(nativeCode) && nativeCode >= 0
       ? nativeCode & 0xff
@@ -122,9 +127,11 @@ function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefin
   );
   return (typed ??
     STORAGE_ERRORS.find(([, message]) =>
-      [fields.errstr, fields.errorMessage, fields.message].some(
-        (value) => typeof value === "string" && value.trim() === message,
-      ),
+      [
+        readOwnErrorDataProperty(fields, "errstr"),
+        readOwnErrorDataProperty(fields, "errorMessage"),
+        readOwnErrorDataProperty(fields, "message"),
+      ].some((value) => typeof value === "string" && value.trim() === message),
     ))?.[0];
 }
 

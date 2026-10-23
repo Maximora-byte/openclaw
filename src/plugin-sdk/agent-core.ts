@@ -11,8 +11,17 @@ import { completeSimple, streamSimple } from "./llm.js";
 
 /** Runtime adapter that lets the package agent-core use OpenClaw LLM helpers. */
 export const openClawAgentCoreRuntime = {
-  isLocalError: (error: unknown) =>
-    isSqliteTranscriptMutationConflict(error) || isLocalStorageOutcomeError(error),
+  isLocalError: (error: unknown) => {
+    if (isLocalStorageOutcomeError(error)) {
+      return true;
+    }
+    try {
+      return isSqliteTranscriptMutationConflict(error);
+    } catch {
+      // Optional conflict diagnostics must not replace an ordinary tool failure.
+      return false;
+    }
+  },
   runStream: runPluginStreamConsumer,
   completeSimple: ((model, context, options) =>
     completeSimple(model, context, options)) satisfies CompleteSimpleFn,

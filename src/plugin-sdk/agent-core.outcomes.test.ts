@@ -118,6 +118,46 @@ it.each(admissionFailurePhases)(
   },
 );
 
+it.each(["code", "nested errors"])(
+  "keeps unreadable %s diagnostics from ending an ordinary tool turn",
+  async (field) => {
+    const failure = new AggregateError([], "Synthetic tool failure");
+    const unsafe = () => {
+      throw new Error("Diagnostic access must not replace the original tool failure");
+    };
+    if (field === "code") {
+      Object.defineProperty(failure, "code", { get: unsafe });
+    } else {
+      Object.defineProperty(failure.errors, Symbol.iterator, { get: unsafe });
+    }
+    const streamFn = vi.fn(
+      createTurnSequenceStream([
+        [makeCall("failing", "failing")],
+        [{ type: "text", text: "Continued after the tool failure" }],
+      ]),
+    );
+    const agent = new Agent({
+      streamFn,
+      initialState: {
+        tools: [
+          {
+            ...makeTool("failing"),
+            async execute() {
+              throw failure;
+            },
+          },
+        ],
+      },
+    });
+    await expect(agent.prompt("Run the synthetic tool")).resolves.toBeUndefined();
+    expect(streamFn).toHaveBeenCalledTimes(2);
+    expect(agent.state.errorMessage).toBeUndefined();
+    expect(agent.state.messages).toContainEqual(
+      expect.objectContaining({ role: "toolResult", toolCallId: "failing", isError: true }),
+    );
+  },
+);
+
 it.each([
   {
     name: "unknown outcome",
@@ -142,6 +182,25 @@ it.each([
         "Synthetic operation and cleanup failure",
         { cause: primary },
       );
+    })(),
+    local: true,
+  },
+  {
+    name: "unknown outcome with unreadable aggregate diagnostics",
+    failure: (() => {
+      const failure = new AggregateError(
+        [
+          new Error("Synthetic sibling"),
+          new SqliteWorkerError("Unconfirmed write", "outcome-unknown"),
+        ],
+        "Synthetic operation failure",
+      );
+      Object.defineProperty(failure.errors, Symbol.iterator, {
+        get() {
+          throw new Error("Diagnostic access must not replace the original tool failure");
+        },
+      });
+      return failure;
     })(),
     local: true,
   },

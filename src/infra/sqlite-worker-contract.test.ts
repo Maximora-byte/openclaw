@@ -52,6 +52,18 @@ describe("worker failure causes", () => {
 });
 
 describe("worker outcome classification", () => {
+  it.each(["errorCode", "code", "errcode", "errstr", "errorMessage", "message"])(
+    "ignores a throwing %s field on an ordinary failure",
+    (field) => {
+      const unsafe = vi.fn(() => {
+        throw new Error("Diagnostic access must not replace the original tool failure");
+      });
+      const failure = Object.defineProperty({}, field, { get: unsafe });
+      expect(classifyGatewayStorageFailure(failure)).toBeUndefined();
+      expect(unsafe).not.toHaveBeenCalled();
+    },
+  );
+
   it.each(["errorType", "name"])("ignores a throwing %s cancellation marker", (marker) => {
     const unsafe = vi.fn(() => {
       throw new Error("Marker access must not replace the original failure");
