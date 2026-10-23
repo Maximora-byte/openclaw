@@ -28,13 +28,14 @@ import {
   readCachedManagedImageUrl,
   resolveManagedImageResource,
 } from "./chat-message-image-loading.ts";
-import { imageTitle, openMessageImage, readImageOriginalBlob } from "./chat-message-image-open.ts";
+import { openMessageImage, readImageOriginalBlob } from "./chat-message-image-open.ts";
 import {
   buildAssistantAttachmentUrl,
   isCanonicalInboundMediaSource,
   isLocalAssistantAttachmentSource,
 } from "./chat-message-local-media.ts";
 import {
+  imageTitle,
   observeChatMediaResourceSubscriber,
   releaseChatMediaResourceOwner,
   type ImageBlock,
