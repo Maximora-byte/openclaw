@@ -1,5 +1,15 @@
 import { Type } from "typebox";
 import { expect, it, vi } from "vitest";
+import {
+  createTurnSequenceStream,
+  makeCall,
+  makeTool,
+} from "../../packages/agent-core/src/agent-loop.test-support.js";
+import {
+  attachInternalToolBatchLifecycle,
+  attachInternalToolExecutionPreparer,
+  setInternalBeforeToolBatch,
+} from "../../packages/agent-core/src/internal-hooks.js";
 import { toToolDefinitions } from "../agents/agent-tool-definition-adapter.js";
 import { wrapToolDefinition } from "../agents/sessions/tools/tool-definition-wrapper.js";
 import { createZeroUsageFixture } from "../agents/test-helpers/usage-fixtures.js";
@@ -7,6 +17,90 @@ import { decodePostgresError } from "../infra/postgres-sync/protocol.js";
 import { SqliteWorkerError } from "../infra/sqlite-worker-contract.js";
 import { createAssistantMessageEventStream } from "../llm/utils/event-stream.js";
 import { Agent, type AgentEvent } from "./agent-core.js";
+
+it.each(["prepare-throw", "prepare-result", "started-sequential", "result-persistence"] as const)(
+  "releases unstarted admission after a local failure at %s",
+  async (phase) => {
+    const failure = new SqliteWorkerError("Synthetic unsettled write", "outcome-unknown");
+    const executePrefix = vi.fn(async () => ({ content: [], details: {} }));
+    const executeTail = vi.fn(async () => ({ content: [], details: {} }));
+    const failing = makeTool("failing");
+    const started = phase === "started-sequential" || phase === "result-persistence";
+    if (phase === "started-sequential") {
+      failing.execute = async () => {
+        await new Promise<void>((resolve) => {
+          setImmediate(resolve);
+        });
+        throw failure;
+      };
+    } else if (!started) {
+      attachInternalToolExecutionPreparer(failing, async () => {
+        if (phase === "prepare-throw") {
+          throw failure;
+        }
+        return { kind: "immediate", outcome: { kind: "error", error: failure }, dispose() {} };
+      });
+    }
+    const streamFn = vi.fn(
+      createTurnSequenceStream([
+        [makeCall("prefix", "prefix"), makeCall("failing", "failing"), makeCall("tail", "tail")],
+      ]),
+    );
+    const agent = new Agent({
+      toolExecution: started ? "sequential" : "parallel",
+      initialState: {
+        tools: [
+          { ...makeTool("prefix"), execute: executePrefix },
+          failing,
+          { ...makeTool("tail"), execute: executeTail },
+        ],
+      },
+      streamFn,
+    });
+    agent.subscribe((event) => {
+      if (
+        phase === "result-persistence" &&
+        event.type === "message_end" &&
+        event.message.role === "toolResult" &&
+        event.message.toolCallId === "failing"
+      ) {
+        throw failure;
+      }
+    });
+    const admitted = new Set<string>();
+    const releaseSkippedCalls = vi.fn((ids: readonly string[]) => {
+      for (const id of ids) {
+        admitted.delete(id);
+      }
+    });
+    setInternalBeforeToolBatch(agent, async ({ calls }) => {
+      for (const call of calls) {
+        admitted.add(call.toolCall.id);
+      }
+      return attachInternalToolBatchLifecycle(
+        {},
+        {
+          commitReadyCalls(readyCalls) {
+            for (const call of readyCalls) {
+              admitted.delete(call.toolCallId);
+            }
+          },
+          releaseSkippedCalls,
+        },
+      );
+    });
+
+    await expect(agent.prompt("Run the admitted tools")).rejects.toBe(failure);
+    expect(streamFn).toHaveBeenCalledOnce();
+    expect(executePrefix).toHaveBeenCalledTimes(started ? 1 : 0);
+    expect(executeTail).not.toHaveBeenCalled();
+    expect(releaseSkippedCalls).toHaveBeenCalledExactlyOnceWith(
+      started ? ["tail"] : ["prefix", "failing", "tail"],
+    );
+    expect(admitted.size).toBe(0);
+    expect(agent.state.isStreaming).toBe(false);
+  },
+);
 
 it.each([
   {

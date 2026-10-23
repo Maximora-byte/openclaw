@@ -52,6 +52,33 @@ describe("worker failure causes", () => {
 });
 
 describe("unknown worker outcome classification", () => {
+  it.each(["cause", "aggregate errors", "aggregate slot"] as const)(
+    "keeps unknown outcomes when the %s accessor rejects inspection",
+    (accessor) => {
+      const unsafe = vi.fn(() => {
+        throw new Error("Diagnostic access must not replace the original failure");
+      });
+      const primary = new SqliteWorkerError("Unknown native settlement", "outcome-unknown");
+      let failure: Error;
+      if (accessor === "cause") {
+        Object.defineProperty(primary, "cause", { get: unsafe });
+        failure = primary;
+      } else {
+        const aggregate = new AggregateError([], "Cleanup", { cause: primary });
+        if (accessor === "aggregate errors") {
+          Object.defineProperty(aggregate, "errors", { get: unsafe });
+        } else {
+          const errors = [primary];
+          Object.defineProperty(errors, "0", { get: unsafe });
+          aggregate.errors = errors;
+        }
+        failure = aggregate;
+      }
+      expect(classifyGatewayStorageFailure(failure)).toBe("session_actor_reconciliation");
+      expect(unsafe).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([false, true])(
     "finds canonical outcomes in cyclic aggregates (foreign realm: %s)",
     (foreign) => {

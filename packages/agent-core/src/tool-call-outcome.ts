@@ -1,5 +1,6 @@
 import type { AssistantMessage } from "@openclaw/llm-core";
 import { coerceErrorMessage } from "@openclaw/normalization-core/error-coercion";
+import type { ExecutedToolCallOutcome, PreparedToolCall } from "./agent-loop-tool-execution.js";
 import { ToolArgumentValidationError } from "./errors.js";
 import {
   appendToolLoopWarning,
@@ -7,6 +8,7 @@ import {
   getInternalToolResultContentSource,
   type InternalToolBatchLifecycle,
 } from "./internal-hooks.js";
+import type { AgentCoreStreamRuntimeDeps } from "./runtime-deps.js";
 import type {
   AfterToolOutcomeContext,
   AgentContext,
@@ -21,7 +23,8 @@ import type {
 type ToolOutcomeContext = {
   assistantMessage: AssistantMessage;
   currentContext: AgentContext;
-  config: Pick<AgentLoopConfig, "afterToolOutcome">;
+  config: Pick<AgentLoopConfig, "afterToolCall" | "afterToolOutcome">;
+  isLocalError?: AgentCoreStreamRuntimeDeps["isLocalError"];
   signal: AbortSignal | undefined;
   warnings?: ToolLoopWarning[];
   lifecycle?: Pick<InternalToolBatchLifecycle, "observeOutcome">;
@@ -37,6 +40,62 @@ export type FinalizedToolCallOutcome = {
   hideFromChannelProgress?: boolean;
   resultContentSource?: ToolResultContentSource;
 };
+
+export async function finalizeExecutedToolCall(
+  batch: ToolOutcomeContext,
+  prepared: PreparedToolCall,
+  executed: ExecutedToolCallOutcome,
+  finalArgs: unknown,
+): Promise<FinalizedToolCallOutcome> {
+  let result = executed.result;
+  let isError = executed.isError;
+
+  if (executed.executionStarted && batch.config.afterToolCall) {
+    try {
+      const afterResult = await batch.config.afterToolCall(
+        {
+          assistantMessage: batch.assistantMessage,
+          toolCall: prepared.toolCall,
+          args: finalArgs,
+          result,
+          isError,
+          context: batch.currentContext,
+        },
+        batch.signal,
+      );
+      if (afterResult) {
+        result = copyInternalToolResultState(result, {
+          ...result,
+          content: afterResult.content ?? result.content,
+          details: afterResult.details ?? result.details,
+          terminate: afterResult.terminate ?? result.terminate,
+        });
+        isError = afterResult.isError ?? isError;
+      }
+    } catch (error) {
+      if (batch.isLocalError?.(error)) {
+        throw error;
+      }
+      result = createErrorToolResult(coerceErrorMessage(error));
+      isError = true;
+    }
+  }
+
+  return await finalizeToolCallOutcome(
+    batch,
+    {
+      toolCall: prepared.toolCall,
+      result,
+      isError,
+      executionStarted: executed.executionStarted,
+      ...(prepared.tool.hideFromChannelProgress === true ? { hideFromChannelProgress: true } : {}),
+      ...(executed.executionStarted && !executed.callerCancelled
+        ? resolveToolResultContentSource(prepared.tool, executed.result)
+        : {}),
+    },
+    finalArgs,
+  );
+}
 
 export async function finalizeToolCallOutcome(
   batch: ToolOutcomeContext,

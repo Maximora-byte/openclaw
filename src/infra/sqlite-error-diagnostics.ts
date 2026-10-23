@@ -25,6 +25,14 @@ const STORAGE_ERRORS = [
 ] as const;
 export type GatewayStorageFailure = (typeof STORAGE_ERRORS)[number][0] | "57014";
 
+function readOwnErrorDataProperty(value: object, key: string): unknown {
+  try {
+    return Object.getOwnPropertyDescriptor(value, key)?.value;
+  } catch {
+    return undefined;
+  }
+}
+
 /** These outcomes must leave tool execution without becoming model-visible tool errors. */
 export function isLocalStorageOutcomeError(error: unknown): boolean {
   const failure = classifyGatewayStorageFailure(error);
@@ -43,19 +51,22 @@ export function classifyGatewayStorageFailure(error: unknown): GatewayStorageFai
   const seen = new Set<unknown>();
   // Cleanup envelopes explicitly identify the operation's primary failure.
   // Secondary cleanup diagnostics must not replace its user-facing outcome.
-  for (
-    let current = error;
-    current instanceof Error && !seen.has(current);
-    current = current.cause
-  ) {
+  for (let current = error; current instanceof Error && !seen.has(current);) {
     seen.add(current);
     outcomeUnknown ||= isSqliteWorkerError(current, "outcome-unknown");
+    const cause = readOwnErrorDataProperty(current, "cause");
     if (current instanceof AggregateError) {
-      if (!(current.cause instanceof Error) || current.errors[0] !== current.cause) {
+      const errors = readOwnErrorDataProperty(current, "errors");
+      if (
+        !(cause instanceof Error) ||
+        !Array.isArray(errors) ||
+        readOwnErrorDataProperty(errors, "0") !== cause
+      ) {
         break;
       }
-      primaryError = current.cause;
+      primaryError = cause;
     }
+    current = cause;
   }
   if (outcomeUnknown || hasSqliteWorkerOutcomeUnknown(primaryError)) {
     return "session_actor_reconciliation";

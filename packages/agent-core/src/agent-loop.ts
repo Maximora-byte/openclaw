@@ -25,7 +25,6 @@ import {
 } from "./errors.js";
 import {
   commitInternalToolTurnInput,
-  copyInternalToolResultState,
   getInternalToolTurnInputScope,
   getInternalSteeringQueueObserver,
   takeInternalToolBatchLifecycle,
@@ -42,10 +41,10 @@ import {
 import {
   createErrorToolResult,
   finalizeToolCallOutcome,
+  finalizeExecutedToolCall,
   immediateToolArgumentValidationError,
   immediateToolCallError,
   immediateToolPreparationError,
-  resolveToolResultContentSource,
   type FinalizedToolCallOutcome,
   type ImmediateToolCallOutcome,
 } from "./tool-call-outcome.js";
@@ -621,19 +620,28 @@ async function executeToolCallGroups(
     try {
       // Sequential groups commit before preparing the next call. Parallel groups
       // prepare together, then commit in source order after their started work settles.
-      while (cursor < toolCalls.length) {
-        const toolCall = toolCalls[cursor++];
-        if (!toolCall) {
-          continue;
+      const groupStart = cursor;
+      try {
+        while (cursor < toolCalls.length) {
+          const toolCall = toolCalls[cursor++];
+          if (!toolCall) {
+            continue;
+          }
+          const entry = await prepareToolCallEntry(batch, toolCall);
+          entries.push(entry);
+          if (!("kind" in entry)) {
+            await emitToolExecutionEnd(entry, batch);
+          }
+          if (sequential || batch.signal?.aborted) {
+            break;
+          }
         }
-        const entry = await prepareToolCallEntry(batch, toolCall);
-        entries.push(entry);
-        if (!("kind" in entry)) {
-          await emitToolExecutionEnd(entry, batch);
-        }
-        if (sequential || batch.signal?.aborted) {
-          break;
-        }
+      } catch (error) {
+        // Nothing in this group launched; release its prefix, failing call, and tail.
+        batch.lifecycle?.releaseSkippedCalls?.(
+          admittedIds(toolCalls.slice(groupStart), batch.validated),
+        );
+        throw error;
       }
 
       const hasReady = entries.some((entry) => "kind" in entry);
@@ -724,8 +732,13 @@ async function executeToolCallGroups(
         );
         started = [];
         for (const result of settled) {
-          if (result.status === "rejected") {
-            fatal ??= { error: result.reason };
+          if (result.status === "rejected" && !fatal) {
+            fatal = { error: result.reason };
+            if (cursor < toolCalls.length) {
+              batch.lifecycle?.releaseSkippedCalls?.(
+                admittedIds(toolCalls.slice(cursor), batch.validated),
+              );
+            }
           }
         }
       }
@@ -733,22 +746,31 @@ async function executeToolCallGroups(
         // Streamed batches may execute concurrently; failure streaks follow source order.
         await batch.waitForPrevious?.();
       }
-      for (const finalized of ordered) {
-        if (finalized) {
-          messages.push(await emitToolResultMessage(finalized, batch.emit));
-          finalizedCalls.push(finalized);
-          if (
-            finalized.loopOutcome &&
-            !fatal &&
-            !batch.signal?.aborted &&
-            !steeringMessages.length
-          ) {
-            intervention ??= batch.lifecycle?.observeOutcome?.(
-              finalized.loopOutcome,
-              batch.toolLoopRecoveryState,
-            );
+      try {
+        for (const finalized of ordered) {
+          if (finalized) {
+            messages.push(await emitToolResultMessage(finalized, batch.emit));
+            finalizedCalls.push(finalized);
+            if (
+              finalized.loopOutcome &&
+              !fatal &&
+              !batch.signal?.aborted &&
+              !steeringMessages.length
+            ) {
+              intervention ??= batch.lifecycle?.observeOutcome?.(
+                finalized.loopOutcome,
+                batch.toolLoopRecoveryState,
+              );
+            }
           }
         }
+      } catch (error) {
+        if (!fatal && steeringMessages.length === 0 && cursor < toolCalls.length) {
+          batch.lifecycle?.releaseSkippedCalls?.(
+            admittedIds(toolCalls.slice(cursor), batch.validated),
+          );
+        }
+        throw error;
       }
     } finally {
       // A local persistence failure cannot release another accepted tool while it still runs.
@@ -982,62 +1004,6 @@ async function validateToolCallForBatchAdmission(
     return immediateToolArgumentValidationError(error);
   }
   return { kind: "prepared", toolCall, tool, args: validatedArgs };
-}
-
-async function finalizeExecutedToolCall(
-  batch: ToolBatchContext,
-  prepared: PreparedToolCall,
-  executed: ExecutedToolCallOutcome,
-  finalArgs: unknown,
-): Promise<FinalizedToolCallOutcome> {
-  let result = executed.result;
-  let isError = executed.isError;
-
-  if (executed.executionStarted && batch.config.afterToolCall) {
-    try {
-      const afterResult = await batch.config.afterToolCall(
-        {
-          assistantMessage: batch.assistantMessage,
-          toolCall: prepared.toolCall,
-          args: finalArgs,
-          result,
-          isError,
-          context: batch.currentContext,
-        },
-        batch.signal,
-      );
-      if (afterResult) {
-        result = copyInternalToolResultState(result, {
-          ...result,
-          content: afterResult.content ?? result.content,
-          details: afterResult.details ?? result.details,
-          terminate: afterResult.terminate ?? result.terminate,
-        });
-        isError = afterResult.isError ?? isError;
-      }
-    } catch (error) {
-      if (batch.isLocalError?.(error)) {
-        throw error;
-      }
-      result = createErrorToolResult(coerceErrorMessage(error));
-      isError = true;
-    }
-  }
-
-  return await finalizeToolCallOutcome(
-    batch,
-    {
-      toolCall: prepared.toolCall,
-      result,
-      isError,
-      executionStarted: executed.executionStarted,
-      ...(prepared.tool.hideFromChannelProgress === true ? { hideFromChannelProgress: true } : {}),
-      ...(executed.executionStarted && !executed.callerCancelled
-        ? resolveToolResultContentSource(prepared.tool, executed.result)
-        : {}),
-    },
-    finalArgs,
-  );
 }
 
 async function completeToolLoopInterventionBatch(
