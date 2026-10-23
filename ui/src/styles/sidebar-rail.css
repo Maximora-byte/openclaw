@@ -9,6 +9,18 @@
   --sidebar-pad-x: 8px;
 }
 
+.sidebar-view-loading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-self: stretch;
+  align-items: stretch;
+  min-width: 0;
+  min-height: 0;
+  gap: 16px;
+  padding: 16px 8px;
+}
+
 /* Preserve title space beside the rail, row insets, and the 44px menu target. */
 .shell--mobile-nav .sidebar--rail .sidebar-shell {
   --sidebar-pad-x: 6px;
