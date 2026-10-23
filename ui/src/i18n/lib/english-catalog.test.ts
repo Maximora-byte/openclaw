@@ -4,6 +4,7 @@ import { expect, it, vi } from "vitest";
 import { registerEnglishCatalog, t } from "../../lib/reactive/i18n.ts";
 import { registerBoardWebsiteEnglish } from "../locales/en-board-website.ts";
 import { registerBoardEnglish } from "../locales/en-board.ts";
+import { registerChatDiffEnglish } from "../locales/en-chat-diff.ts";
 import { registerChatSessionEnglish } from "../locales/en-chat-session.ts";
 import { en } from "../locales/en.ts";
 import { loadLazyLocaleTranslation } from "./registry.ts";
@@ -35,6 +36,8 @@ it("keeps shared session labels eager while lazy renderers extend their retained
 
     registerEnglishCatalog(registerChatSessionEnglish);
     expect(t("chat.activityPills.label")).toBe("Session activity");
+    expect(t("chat.sessionDiff.modeUnified")).toBe("chat.sessionDiff.modeUnified");
+    registerEnglishCatalog(registerChatDiffEnglish);
     expect(t("chat.sessionDiff.modeUnified")).toBe("Unified");
     expect(en.chat.sessionDetails).toBe(details);
     expect(en.chat.sessionDiff).toBe(diff);
