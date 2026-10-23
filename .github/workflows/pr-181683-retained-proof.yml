@@ -1,0 +1,145 @@
+name: PR 181683 retained-output behavior proof
+on:
+  push:
+    branches: [proof/pr-181683-retained-startup]
+permissions:
+  contents: read
+jobs:
+  retained-startup-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      OPENCLAW_TSDOWN_MAX_OLD_SPACE_MB: "4096"
+    steps:
+      - name: Check out the exact reviewed PR head without persisted credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: Maximora-byte/openclaw
+          ref: e278741c568a93bfccbc22f926bd5993c1e2b4d0
+          fetch-depth: 2
+          persist-credentials: false
+      - name: Set up pinned Node, pnpm and frozen dependencies
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+      - name: Prove retained-output behavior through the real startup command
+        shell: bash
+        run: |
+          python3 -u <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import time
+          
+          HEAD = "e278741c568a93bfccbc22f926bd5993c1e2b4d0"
+          BASE = "e4db384743d18eef1b73070f45c1ef07bde95074"
+          MARKER = "OPENCLAW_RETAINED_OUTPUT_PROOF_181683"
+          OUT = Path(".artifacts/retained-proof")
+          OUT.mkdir(parents=True, exist_ok=True)
+          assert subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip() == HEAD
+          
+          def run(label, command):
+              print(f"\n$ {' '.join(command)} [{label}]", flush=True)
+              lines = []
+              start = time.monotonic()
+              with (OUT / f"{label}.log").open("w") as log:
+                  process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+                  for line in process.stdout:
+                      log.write(line)
+                      log.flush()
+                      lines.append(line)
+                      if any(token in line for token in ("[cli-startup-build]", "[build]", "Build summary", "gateway status", "Node:", "Runs per case:", "Warmup runs", "Timeout:", "error", "Error", "failed", MARKER)):
+                          print(line.rstrip(), flush=True)
+                  code = process.wait()
+              print(f"{label}: exit={code}, elapsed={time.monotonic() - start:.2f}s", flush=True)
+              if code != 0:
+                  print("".join(lines[-100:]), flush=True)
+                  raise RuntimeError(f"{label} failed with exit {code}")
+              return "".join(lines)
+          
+          def sha(file):
+              return hashlib.sha256(Path(file).read_bytes()).hexdigest()
+          
+          def snapshot(label):
+              metadata_file = Path("dist/cli-startup-metadata.json")
+              metadata = json.loads(metadata_file.read_text())
+              entries = [str(p) for p in (Path("dist/entry.js"), Path("dist/entry.mjs")) if p.is_file()]
+              assert entries, "The real compiler must produce a CLI entry"
+              value = {
+                  "label": label,
+                  "entry_sha256": {p: sha(p) for p in entries},
+                  "metadata_sha256": sha(metadata_file),
+                  "root_help_bundle_signature": metadata.get("rootHelpBundleSignature"),
+                  "metadata_has_marker": MARKER in metadata.get("rootHelpText", ""),
+              }
+              print(json.dumps(value, indent=2), flush=True)
+              (OUT / f"{label}.json").write_text(json.dumps(value, indent=2) + "\n")
+              return value
+          
+          command = ["pnpm", "test:startup:bench:smoke"]
+          source = Path("src/cli/program/root-help.ts")
+          guard = Path("scripts/ensure-cli-startup-build.mts")
+          original_source = source.read_bytes()
+          original_guard = guard.read_bytes()
+          summary = {"head": HEAD, "old_guard_from": BASE, "command": command, "source_fixture": str(source), "marker": MARKER}
+          print(f"Target head: {HEAD}\nControl guard: {BASE}\nSource fixture: {source}\nMarker: {MARKER}", flush=True)
+          try:
+              run("seed-real-build-and-smoke", command)
+              before = snapshot("before-source-change")
+              assert not before["metadata_has_marker"]
+              help_before = run("help-before-source-change", ["node", "openclaw.mjs", "--help"])
+              assert MARKER not in help_before
+              text = original_source.decode()
+              needle = "  program.outputHelp();"
+              assert text.count(needle) == 1
+              source.write_text(text.replace(needle, f'  program.addHelpText("after", "\\n{MARKER}\\n");\n{needle}'))
+              (OUT / "source-fixture.patch").write_bytes(subprocess.check_output(["git", "diff", "--", str(source)]))
+              retained = snapshot("retained-after-source-change")
+              assert retained["entry_sha256"] == before["entry_sha256"]
+              assert retained["metadata_sha256"] == before["metadata_sha256"]
+          
+              # Same retained workspace and real command; replace only the guard with its pre-fix bytes.
+              guard.write_bytes(subprocess.check_output(["git", "show", f"{BASE}:{guard.as_posix()}"]))
+              old_output = run("old-guard-real-startup-command", command)
+              assert "[cli-startup-build]" not in old_output, "Old guard unexpectedly ran the compiler"
+              stale = snapshot("old-guard-stale")
+              assert stale["entry_sha256"] == before["entry_sha256"]
+              assert stale["metadata_sha256"] == before["metadata_sha256"]
+              help_stale = run("old-guard-help", ["node", "openclaw.mjs", "--help"])
+              assert MARKER not in help_stale
+              print("CONTROL REPRODUCED: real startup command exited 0 while retained CLI and metadata missed the source marker.", flush=True)
+          
+              # Restore exact PR guard. Keep all outputs and the identical source fixture.
+              guard.write_bytes(original_guard)
+              patched_output = run("patched-head-real-startup-command", command)
+              assert "[cli-startup-build] ensuring current assets with cliStartup build profile" in patched_output
+              fresh = snapshot("patched-head-refreshed")
+              assert fresh["metadata_sha256"] != stale["metadata_sha256"]
+              assert fresh["root_help_bundle_signature"] != stale["root_help_bundle_signature"]
+              assert fresh["metadata_has_marker"], "The real metadata writer must publish changed help"
+              help_fresh = run("patched-head-help", ["node", "openclaw.mjs", "--help"])
+              assert MARKER in help_fresh, "The real built CLI must show the source marker"
+              report = json.loads(Path(".artifacts/cli-startup-bench-smoke.json").read_text())
+              (OUT / "patched-startup-benchmark.json").write_text(json.dumps(report, indent=2) + "\n")
+              samples = [sample for case in report["primary"]["cases"] for sample in case["samples"]]
+              assert samples and all(sample["exitCode"] == 0 for sample in samples)
+              summary.update({"result": "pass", "before": before, "old_guard": stale, "patched_head": fresh, "benchmark_samples": samples})
+              print("PROOF PASSED: unchanged PR guard entered the real compiler and metadata writer; changed help reached metadata and built CLI; startup smoke sample exited 0.", flush=True)
+          finally:
+              source.write_bytes(original_source)
+              guard.write_bytes(original_guard)
+              run("tracked-source-clean", ["git", "diff", "--exit-code"])
+              (OUT / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+          
+          PY
+      - name: Upload terminal evidence and benchmark
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: pr-181683-retained-output-proof
+          path: .artifacts/retained-proof/
+          retention-days: 30
+          if-no-files-found: warn
