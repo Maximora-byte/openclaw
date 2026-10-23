@@ -61,8 +61,8 @@ const controlUiPerformanceBudgets = {
   newBootCssRequests: 3,
   // Defer optional sidebar bodies and copy: 1,306,447 B Chat / 801,507 B New.
   // Preserve main's relative headroom against the matched a234721 build.
-  chatBootJsGzipBytes: 1_355_402,
-  newBootJsGzipBytes: 809_507,
+  chatBootJsGzipBytes: 1_355_393,
+  newBootJsGzipBytes: 809_531,
   startupCssRequests: 1,
   // Solid 2 action/optimistic runtime adoption; offset tracked by HF-STARTUP-BUDGET.
   startupJsGzipBytes: 325_081,
