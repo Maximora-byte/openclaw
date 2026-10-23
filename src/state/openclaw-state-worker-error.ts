@@ -3,7 +3,7 @@ import {
   isSqliteNativeOpenFailure,
   markSqliteNativeOpenFailure,
 } from "../infra/sqlite-error-diagnostics.js";
-import { isSqliteWorkerError, SqliteWorkerError } from "../infra/sqlite-worker-contract.js";
+import { isSqliteWorkerError, SqliteWorkerError } from "../infra/sqlite-worker-error.js";
 import { resolveGlobalSingleton } from "../shared/global-singleton.js";
 import {
   DATABASE_QUARANTINE_READ_CLEANUP_ERROR_NAME,
