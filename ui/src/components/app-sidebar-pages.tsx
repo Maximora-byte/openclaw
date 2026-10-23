@@ -1,14 +1,17 @@
 import type { JSX } from "@solidjs/web";
 import { createMemo, For, Show } from "solid-js";
+import type { GatewayControlUiPluginTab } from "../api/gateway.ts";
 import {
   parseSidebarEntry,
   serializeSidebarEntry,
   SIDEBAR_NAV_ROUTES,
   titleForRoute,
+  type SidebarZoneEntry,
 } from "../app-navigation.ts";
 import { beginNativeWindowDrag } from "../app/native-window-drag.ts";
 import { t } from "../lib/reactive/i18n.ts";
-import { renderAppSidebarPageEntry, type AppSidebarRenderHost } from "./app-sidebar-render.tsx";
+import { renderAppSidebarPluginTab, type AppSidebarRenderHost } from "./app-sidebar-render.tsx";
+import type { SidebarRecentSession } from "./app-sidebar-session-types.ts";
 import { McpAppCatalog } from "./mcp-app-catalog.tsx";
 import { SidebarCollapseToggle } from "./sidebar-collapse-toggle.tsx";
 import { restoreSnapshotSession } from "./sidebar-snapshot-model.ts";
@@ -108,5 +111,67 @@ export function SidebarPages(props: { host: AppSidebarRenderHost }): JSX.Element
         </button>
       </Show>
     </nav>
+  );
+}
+
+function renderAppSidebarPageEntry(
+  host: AppSidebarRenderHost,
+  entry: SidebarZoneEntry,
+  sessionRows: () => ReadonlyMap<string, SidebarRecentSession>,
+  pluginTabs: () => ReadonlyMap<string, GatewayControlUiPluginTab>,
+): JSX.Element {
+  if (entry.type === "person") {
+    return undefined;
+  }
+  const serialized = serializeSidebarEntry(entry);
+  const pluginTab = () => (entry.type === "plugin" ? pluginTabs().get(entry.key) : undefined);
+  const pinnedSession = () => (entry.type === "session" ? sessionRows().get(entry.key) : undefined);
+  const content =
+    entry.type === "route" ? (
+      host.sidebarMenus.renderRoute(entry.route, host)
+    ) : entry.type === "plugin" ? (
+      <Show
+        when={pluginTab()}
+        fallback={
+          <openclaw-plugin-contributions
+            prop:kind={"navigation"}
+            prop:navigationKey={entry.key}
+            prop:navigationChildren={false}
+            prop:navigationMenus={host.sidebarMenus}
+          />
+        }
+      >
+        {(tab) => renderAppSidebarPluginTab(host, tab)}
+      </Show>
+    ) : (
+      <Show when={pinnedSession()}>{(session) => host.renderPinnedSidebarSession(session)}</Show>
+    );
+  const draggable = () =>
+    !host.sidebarSnapshot && (entry.type === "route" || entry.type === "plugin");
+  return (
+    <div
+      class={[
+        "sidebar-zone-entry",
+        {
+          "sidebar-zone-entry--dragging": host.sessionOrganizer.draggingSidebarEntry === serialized,
+        },
+      ]}
+      data-sidebar-entry={serialized}
+      draggable={draggable() ? "true" : "false"}
+      onDragStart={
+        entry.type === "route"
+          ? (event: DragEvent) => host.sessionOrganizer.startSidebarRouteDrag(event, entry.route)
+          : entry.type === "plugin"
+            ? (event: DragEvent) => host.sessionOrganizer.startSidebarPluginDrag(event, entry.key)
+            : undefined
+      }
+      onDragEnd={() => {
+        if (draggable()) {
+          host.sessionOrganizer.finishSidebarEntryDrag();
+        }
+      }}
+    >
+      {content}
+    </div>
   );
 }
