@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 311139,
-  "reason": "Deferred sidebar Pages and Roster: matched fixed-input 55477ab build 311147 to 311139 B startup, 1324214 to 1320687 B Chat, and 814363 to 802807 B New Session; startup remains seven JS requests.",
+  "startupJsGzipBytes": 294961,
+  "reason": "Startup leaf icons, update classification, and lazy English: matched b5b24cf15c2 build 310773 to 294961 B gzip with 7 JS and 1 CSS request.",
   "updatedAt": "2026-10-23"
 }
