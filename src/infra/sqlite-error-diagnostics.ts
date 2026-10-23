@@ -92,8 +92,8 @@ function classifyStorageFailure(error: unknown): GatewayStorageFailure | undefin
   // The decoder's name survives the actor's name/message-only error projection.
   // A provider's unrelated 57014 code must not acquire storage semantics.
   if (
-    fields.errorType === POSTGRES_QUERY_CANCELED_ERROR_NAME ||
-    fields.name === POSTGRES_QUERY_CANCELED_ERROR_NAME
+    readOwnErrorDataProperty(fields, "errorType") === POSTGRES_QUERY_CANCELED_ERROR_NAME ||
+    readOwnErrorDataProperty(fields, "name") === POSTGRES_QUERY_CANCELED_ERROR_NAME
   ) {
     return "57014";
   }

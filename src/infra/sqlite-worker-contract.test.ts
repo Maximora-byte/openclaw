@@ -51,7 +51,17 @@ describe("worker failure causes", () => {
   );
 });
 
-describe("unknown worker outcome classification", () => {
+describe("worker outcome classification", () => {
+  it.each(["errorType", "name"])("ignores a throwing %s cancellation marker", (marker) => {
+    const unsafe = vi.fn(() => {
+      throw new Error("Marker access must not replace the original failure");
+    });
+    const failure = Object.assign(new Error("Synthetic capacity failure"), { code: "SQLITE_FULL" });
+    Object.defineProperty(failure, marker, { get: unsafe });
+    expect(classifyGatewayStorageFailure(failure)).toBe("SQLITE_FULL");
+    expect(unsafe).not.toHaveBeenCalled();
+  });
+
   it.each(["cause", "aggregate errors", "aggregate slot"] as const)(
     "keeps unknown outcomes when the %s accessor rejects inspection",
     (accessor) => {
