@@ -1,5 +1,5 @@
 {
-  "startupJsGzipBytes": 311358,
-  "reason": "Panel header imports and Labs/Usage copy: matched 721d124 build 311566 to 311358 B startup, 1333529 to 1324362 B Chat and 816308 to 814674 B New Session; seven startup JS requests.",
+  "startupJsGzipBytes": 311139,
+  "reason": "Deferred sidebar Pages and Roster: matched fixed-input 55477ab build 311147 to 311139 B startup, 1324214 to 1320687 B Chat, and 814363 to 802807 B New Session; startup remains seven JS requests.",
   "updatedAt": "2026-10-23"
 }
